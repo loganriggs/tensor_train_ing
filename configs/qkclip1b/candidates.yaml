@@ -1,3 +1,10 @@
+# Seed 202 first: without QK-clip, w2048ws at LR 1.35e-3 diverged on seed 202 (5.657; S1S2 max 4.9k -> 887k at step 1000)
+# but not on seed 101 (4.874). The clean test is whether QK-clip prevents the seed-202 divergence.
+- name: w2048ws_qkclip100_lr0.00135_s202
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 202
 - name: w2048ws_qkclip100_lr0.00135_s101
   overrides:
     train:

@@ -342,6 +342,14 @@ with lower training loss at every logged step. This is the first evidence that t
 **Seed 202, default at LR 1.35e-3 (10:45):** 5.006 (seed 101: 4.996), so the default's high-LR result replicates closely. Its 3×-LR penalty
 is +0.354 on seed 202 (+0.294 on seed 101). The scaled seed-202 high-LR run is in progress.
 
+**Seed 202, width-scaled at LR 1.35e-3 (12:18): diverged, CE 5.657** (seed 101: 4.874; default seed 202: 5.006). Max |S1·S2| went
+4.9k (step 500) → 887k (step 1000) → 10M (step 2000). The loss spiked 6.33 → 8.2 with grad norm 138 at step ~1500, and the run never
+recovered (parent final 5.61). Seed 101 at identical settings stayed at 2k–26k with no spike. **At 1B, LR 1.35e-3 sits at the edge of
+stability even with width scaling, and whether a run diverges depends on the seed.** The two-seed high-LR penalty for the scaled arm is
++0.310 / +1.092, so width scaling alone does not make 3× the base LR safe at 4× width. Both default runs at this LR also ran at
+1e6–5e7 score maxima without a loss spike but finished worse (5.00/5.01). Consequence: QK-clip (which bounds exactly this quantity) moved to
+the front of the queue, with the diverging seed 202 as its first candidate (`runs/queue2.sh`).
+
 **High-LR update (seed 101, LR 1.35e-3):** 1B default 4.996, 1B scaled **4.874**. Scaling still wins (−0.122), but it **no longer
 reduces the 3×-LR penalty at 4× width**: +0.294 default vs **+0.310 scaled**. At 2× width the penalty was cut from +0.20 to +0.08.
 The default run's attention products ran away (2.7e5 → 1.6e7). The scaled run's stayed ~1000× smaller (2.2e4 at step 2500) but were

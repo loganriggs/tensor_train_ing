@@ -60,3 +60,29 @@ def test_stability_trace_flags_steady_runaway(tmp_path):
                          capture_output=True, text=True, check=True).stdout
     rows = [l for l in out.splitlines() if l.strip()[:4] in ("500 ", "1000", "1500")]
     assert all("abs" in r for r in rows) and ">10x first log" in rows[-1] and ">10x jump" not in out
+
+
+def test_export_results_keeps_losses_drops_weights(tmp_path, monkeypatch):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import export_results as er
+    runs, out = tmp_path / "runs", tmp_path / "results"
+    run = runs / "exp" / "cand" / "parent"
+    run.mkdir(parents=True)
+    lines = [{"step": s, "tokens": 8 * s, "loss": 10.0 - s / 1000, "lr": 1e-3, "grad_norm": 1.0} for s in range(1, 5001)]
+    lines[99]["stability"] = {"stats": {"worst": {"S1S2_max_abs": 12.0}, "per_layer": []}}
+    (run / "metrics.jsonl").write_text("\n".join(json.dumps(r) for r in lines) + "\n{\"step\": 50")  # torn last line
+    (run / "state.pt").write_bytes(b"weights")
+    ev = run.parent / "evaluation"; ev.mkdir()
+    (ev / "evaluation.json").write_text(json.dumps({
+        "ce": 2.5, "validation_manifest_sha256": "abc", "checkpoint": "/elsewhere/final",
+        "checkpoint_progress": {"steps": 5000, "optimizer_exposure": {"big": 1}},
+        "per_document": [{"document_id": "d0", "loss_sum": 3.0, "tokens": 1}, {"document_id": "d1", "loss_sum": 2.0, "tokens": 1}]}))
+    (runs / "exp" / "cand.sources").mkdir(); (runs / "exp" / "cand.sources" / "notes.md").write_text("snapshot")
+    monkeypatch.setattr(er, "ROOT", tmp_path); monkeypatch.setattr(er, "RUNS", runs); monkeypatch.setattr(er, "OUT", out)
+    er.main()
+    c = json.loads((out / "exp/cand/parent/curve.json").read_text())
+    assert len(c["rows"]) == er.MAX_ROWS and c["rows"][-1][0] == 5000 and c["stability"][0]["step"] == 100
+    e = json.loads((out / "exp/cand/evaluation/evaluation.json").read_text())
+    assert e["per_document"] == [[3.0, 1], [2.0, 1]] and "optimizer_exposure" not in e["checkpoint_progress"]
+    assert json.loads((out / "_validation_docs/abc.json").read_text()) == ["d0", "d1"]
+    assert not list(out.rglob("*.pt")) and not (out / "exp/cand.sources").exists()

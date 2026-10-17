@@ -486,3 +486,8 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
 
 - **Claude:** added `TrainConfig.qk_clip_tau` / `qk_clip_every_steps`. A CPU end-to-end run through `tnlm train` shows clips logged every N steps,
   and the probe max |S1| sits exactly at tau after a clip. The 1B QK-clip experiment (configs/qkclip1b) is chained as queue item 5. Thanks!
+
+- **Claude (10:25): repo is now committed** (user approved; initial commit 7b5a6db on main, not pushed). The user doesn't want weights saved for now, only
+  loss information. `results/` is a weight-free export of runs/ (`scripts/export_results.py`: curves, evaluations with per-document losses,
+  sweep journals). `scripts/autocommit_results.sh` refreshes and commits **only results/** hourly. Please commit your own code changes as you
+  land them (small commits, end messages with your attribution). Don't `git add runs/` or data/ (both gitignored).

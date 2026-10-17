@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import torch
@@ -14,7 +15,44 @@ from .model import TensorLM
 from .train import full_config, plan_search, train_run, profile_run, summarize_runs
 
 
-def validate_config(cfg, device=None):
+def _checkpoint_disk_check(storage_plan, run_dir=None):
+    """Advisory fresh-run projection against the destination filesystem now.
+
+    Validation never creates the destination or reserves space. Without an
+    explicit run directory, report the current filesystem rather than assuming
+    that the spend ledger and future checkpoints share a filesystem.
+    """
+    from .checkpoint_storage import RESERVE_BYTES
+    destination = Path(run_dir).absolute() if run_dir is not None else Path.cwd()
+    info = {'destination': str(destination),
+            'destination_source': 'run_dir' if run_dir is not None else 'current_working_directory',
+            'required_additional_bytes': storage_plan['required_additional_bytes'],
+            'reserve_bytes': RESERVE_BYTES,
+            'free_bytes': None, 'filesystem_probe_path': None,
+            'scope': 'advisory fresh serial run projection; no reservation; existing artifacts and concurrent writes excluded'}
+    try:
+        probe = destination
+        while not probe.exists():
+            parent = probe.parent
+            if parent == probe:
+                raise FileNotFoundError(str(probe))
+            probe = parent
+        info['filesystem_probe_path'] = str(probe)
+        info['free_bytes'] = shutil.disk_usage(probe).free
+    except OSError as error:
+        info.update(status='unavailable', error=str(error))
+        return info, ['Checkpoint disk availability could not be checked: ' + str(error)]
+    required = info['required_additional_bytes'] + RESERVE_BYTES
+    if info['free_bytes'] < required:
+        info['status'] = 'insufficient'
+        return info, [f"Checkpoint storage projection needs {info['required_additional_bytes']} bytes "
+                      f"plus {RESERVE_BYTES} bytes reserve, but only {info['free_bytes']} bytes are free "
+                      f"on {probe}. Adjust retention or choose another run directory before launch."]
+    info['status'] = 'ok'
+    return info, []
+
+
+def validate_config(cfg, device=None, run_dir=None):
     # Meta construction counts parameters without allocating a 100M model.
     class ShapeOnlyLM(TensorLM):
         def reset_parameters(self):
@@ -42,9 +80,12 @@ def validate_config(cfg, device=None):
     loss_rows = batch * context
     if cfg.model.loss_chunk_tokens > 0:
         loss_rows = min(loss_rows, cfg.model.loss_chunk_tokens)
+    storage_plan = checkpoint_storage_plan(cfg)
+    disk_check, warnings = _checkpoint_disk_check(storage_plan, run_dir)
     return {'parameters': counts, 'operator_audit': audit,
             'memory_plan': capacity,
-            'checkpoint_storage_plan': checkpoint_storage_plan(cfg),
+            'checkpoint_storage_plan': storage_plan,
+            'checkpoint_disk_check': disk_check, 'warnings': warnings,
             'memory_plan_assumptions': {'gpu_capacity_GB': gpu_gb, 'state_bytes_per_parameter': 16,
                 'scope': 'approximate FSDP/AdamW capacity model with measured activation constants and fixed loss-workspace assumptions; not measured peak memory or proof of fit',
                 'capacity_source': 'selected CUDA device' if probe_device.type == 'cuda' and torch.cuda.is_available() else 'hypothetical 80 GB GPU'},
@@ -297,6 +338,7 @@ def main(argv=None):
             p.add_argument('--candidates', help='YAML/JSON list of named configuration overrides; planning only')
         if name == 'validate_config':
             p.add_argument('--device', help='resolve auto attention for this device without allocating weights')
+            p.add_argument('--run-dir', help='future checkpoint destination for advisory free-disk check; defaults to current working directory')
     p = sub.add_parser('sweep-config', help='export one recorded sweep candidate as YAML without training')
     p.add_argument('--sweep', required=True, help='directory containing sweep.json')
     p.add_argument('--candidate', required=True, help='exact recorded candidate name')
@@ -532,7 +574,7 @@ def main(argv=None):
                             stage_budgets=project.get('stage_budgets'))
                 result = ledger.record_charge(args.charge_id, args.usd, stage=args.stage, description=args.description)
         elif args.command == 'validate_config':
-            result = validate_config(cfg, device=args.device)
+            result = validate_config(cfg, device=args.device, run_dir=args.run_dir)
         elif args.command == 'plan_search':
             if args.candidates:
                 import yaml

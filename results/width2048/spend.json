@@ -247,11 +247,33 @@
       "elapsed_seconds": 5432.149238046026
     },
     "/workspace/tensor_train_ing/runs/width2048/v2/w2048_lr0.00135_s202/w2048_lr0.00135_s202/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.06863651071139297,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/width2048/v2/w2048_lr0.00135_s202/w2048_lr0.00135_s202/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 585.6635187509237
+    },
+    "/workspace/tensor_train_ing/runs/width2048/v2/w2048_lr0.00135_s202/w2048_lr0.00135_s202/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.022846787528022064,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/width2048/v2/w2048_lr0.00135_s202/w2048_lr0.00135_s202/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 194.9477011160925
+    },
+    "/workspace/tensor_train_ing/runs/width2048/v2/w2048ws_lr0.00135_s202/w2048ws_lr0.00135_s202/parent": {
       "status": "running",
       "rate_usd_per_hour": 0.4219,
       "reserved_usd": 5.56908,
       "spent_usd": 0.0,
-      "parent_checkpoint": "/workspace/tensor_train_ing/runs/width2048/v2/w2048_lr0.00135_s202/w2048_lr0.00135_s202/parent/milestone-000045003571",
+      "parent_checkpoint": null,
       "cost_margin_fraction": 0.1,
       "stage": "C",
       "kind": "runtime"

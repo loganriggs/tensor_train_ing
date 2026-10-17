@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/qkclip1b/v1/w2048ws_qkclip100_lr0.00135_s202/w2048ws_qkclip100_lr0.00135_s202/parent": {
+      "status": "running",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 5.56908,
+      "spent_usd": 0.0,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime"
+    }
+  }
+}

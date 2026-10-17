@@ -310,7 +310,7 @@ and larger score products (4.6k vs 3.4k) than its scaled twin (`runs/joint50m/st
 
 </details>
 
-## Width 2048 (~1B) results (base LR: 2 seeds; high LR and fixed-WD arms: seed 101 / pending)
+## Width 2048 (~1B) results (complete: 3 arms × 2 LRs × 2 seeds)
 Same 50M-token cooled protocol on the confirmation subset (`configs/width2048/`, `runs/width2048/v2/`). Activation checkpointing,
 screening retention, live stability logging every 500 steps (`scripts/stability_trace.py`).
 
@@ -331,6 +331,24 @@ screening retention, live stability logging every 500 steps (`scripts/stability_
 the default 1B at LR 4.5e-4 scored 4.652 with seed 202 (vs 4.702 with seed 101), *better* than the 300M default (4.671). The
 "1B default worse than 300M at the base LR" result is within seed noise and is withdrawn. The default 1B shows the largest
 same-config seed spread so far (0.050).
+
+### 1B sweep: final two-seed summary (18:36; `runs/width2048/comparisons/`, 22 paired comparisons, document-bootstrap 95% CIs)
+
+| 12×2048, 50M cooled tokens | LR 4.5e-4 s101 | s202 | LR 1.35e-3 s101 | s202 |
+| --- | ---: | ---: | ---: | ---: |
+| default | 4.702 | 4.652 | 4.996 | 5.006 |
+| width-scaled (LR ∝ w^-½, WD ∝ w^+½) | **4.564** | **4.565** | **4.874** | 5.657 (diverged) |
+| width-scaled LR, fixed WD | 4.577 | 4.563 | 5.202 (diverged) | 4.861 |
+
+1. **At the base LR, width scaling is a reliable win at 1B:** −0.138 / −0.087 vs default (both CIs exclude 0), and it is far more seed-stable
+   (0.001 vs 0.050 spread). It beats the 100M baseline by −0.237 / −0.225, versus −0.099 / −0.138 for the default at 1B.
+2. **At the base LR, WD rescaling doesn't matter:** fixed-WD vs rescaled-WD is +0.013 / −0.002.
+3. **At 3× the base LR, no parameterization is safe at 1B.** Each width-scaled arm diverged on exactly one of two seeds (a jump in attention
+   scores to 1e5–1e7 within the first ~1000 steps, then a lasting loss gap). The default never spiked but trained worse on both seeds. Best
+   non-diverged high-LR result: 4.861 (scaled, fixed WD, s202), still +0.30 over its base-LR run. **The base LR (4.5e-4, transferred from
+   512 width) remains near-optimal at 1B; the safe-LR margin shrinks with width.**
+4. Consequence for scaling up: the parameterization transfers the *optimum* but not the *stability margin*. That points to bounding the
+   attention scores directly (QK-clip, now running on the diverging seed) and to the exponent fit (queued) for the LR rule itself.
 
 **Two-seed base-LR result (seed 202 scaled, 09:00): width scaling helps at 1B.** Scaled 1B: 4.564 / 4.565 (seeds 101/202, spread 0.001);
 default 1B: 4.702 / 4.652. Paired scaled − default: **−0.138 / −0.087** (mean −0.11). Both seeds agree in sign, and the scaled arm is far more

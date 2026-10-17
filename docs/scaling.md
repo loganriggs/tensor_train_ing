@@ -350,6 +350,10 @@ stability even with width scaling, and whether a run diverges depends on the see
 1e6–5e7 score maxima without a loss spike but finished worse (5.00/5.01). Consequence: QK-clip (which bounds exactly this quantity) moved to
 the front of the queue, with the diverging seed 202 as its first candidate (`runs/queue2.sh`).
 
+**Fixed-WD arm (preliminary, seed 101, LR 4.5e-4; 13:52):** width-scaled LR with WD *not* rescaled (`wsfwd`) scored 4.577, vs 4.564 for
+the default rule (WD ∝ width^+½). That's +0.013 in favor of rescaling WD. It's small, but the scaled arm's seed spread so far is 0.001, so it may
+be real; it needs the seed-202 fixed-WD run before it's reported as a finding.
+
 **High-LR update (seed 101, LR 1.35e-3):** 1B default 4.996, 1B scaled **4.874**. Scaling still wins (−0.122), but it **no longer
 reduces the 3×-LR penalty at 4× width**: +0.294 default vs **+0.310 scaled**. At 2× width the penalty was cut from +0.20 to +0.08.
 The default run's attention products ran away (2.7e5 → 1.6e7). The scaled run's stayed ~1000× smaller (2.2e4 at step 2500) but were

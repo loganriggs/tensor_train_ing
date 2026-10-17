@@ -1,4 +1,5 @@
 """Smoke tests for the reusable tools in scripts/ (not part of the tnlm package, but relied on by every sweep)."""
+import pytest
 import json
 import subprocess
 import sys
@@ -96,3 +97,19 @@ def test_run_queue_runs_in_order_and_stops_at_first_failure(tmp_path):
     assert r.returncode == 3
     assert r.stdout.index("ran-ok") < r.stdout.index("ran-bad") and "ran-never" not in r.stdout
     assert "QUEUE_FAILED" in r.stdout and "QUEUE_DONE" not in r.stdout
+
+
+def test_make_pairs_resolves_absolute_and_refuses_missing(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import make_pairs as mp
+    runs = tmp_path / "runs"
+    for c in ("a", "b"):
+        e = runs / "exp/v2" / c / c / "evaluation"; e.mkdir(parents=True); (e / "evaluation.json").write_text("{}")
+    out = tmp_path / "pairs.yaml"
+    mp.main([str(out), "x=exp/v2/a,exp/v2/b"], runs=runs)
+    import yaml
+    p = yaml.safe_load(out.read_text())[0]
+    assert Path(p["left"]).is_absolute() and p["right"].endswith("exp/v2/b/b/evaluation/evaluation.json")
+    with pytest.raises(SystemExit):
+        mp.main([str(tmp_path / "bad.yaml"), "x=exp/v1/a,exp/v2/b"], runs=runs)
+    assert not (tmp_path / "bad.yaml").exists()

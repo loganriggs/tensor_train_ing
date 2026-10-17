@@ -352,7 +352,9 @@ the front of the queue, with the diverging seed 202 as its first candidate (`run
 
 **Fixed-WD arm (preliminary, seed 101, LR 4.5e-4; 13:52):** width-scaled LR with WD *not* rescaled (`wsfwd`) scored 4.577, vs 4.564 for
 the default rule (WD ∝ width^+½). That's +0.013 in favor of rescaling WD. It's small, but the scaled arm's seed spread so far is 0.001, so it may
-be real; it needs the seed-202 fixed-WD run before it's reported as a finding.
+be real; it needs the seed-202 fixed-WD run before it's reported as a finding. **Seed 202 (17:00): 4.563 vs 4.565, i.e. −0.002.** Two seeds:
++0.013 / −0.002, so **at the base LR, rescaling WD with width makes no reliable difference.** Any effect of WD rescaling shows up at high LR
+(stability), not at the base LR.
 
 **Fixed-WD arm at LR 1.35e-3 (seed 101, live, 14:02):** flagged by the live watcher at step 500, with max |S1·S2| at 305k and loss 7.56. With rescaled WD
 on the same seed, step 500 had 2.0k and loss 5.86. Without the width rescaling of WD (i.e. 2× smaller hidden WD at 1B), this seed diverges early,

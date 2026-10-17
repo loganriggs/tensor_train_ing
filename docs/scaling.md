@@ -339,6 +339,9 @@ loss bump (5.70 → 6.19 between steps 500 and 1500) and MLP-product kurtosis gr
 monotonically with size (4.801 → 4.661 → 4.564), and its live MLP tails stay ~20× lighter (kurtosis ~100 vs ~2,500 at step 3500)
 with lower training loss at every logged step. This is the first evidence that the rule holds over a 4× width ratio *at the base LR*.
 
+**Seed 202, default at LR 1.35e-3 (10:45):** 5.006 (seed 101: 4.996), so the default's high-LR result replicates closely. Its 3×-LR penalty
+is +0.354 on seed 202 (+0.294 on seed 101). The scaled seed-202 high-LR run is in progress.
+
 **High-LR update (seed 101, LR 1.35e-3):** 1B default 4.996, 1B scaled **4.874**. Scaling still wins (−0.122), but it **no longer
 reduces the 3×-LR penalty at 4× width**: +0.294 default vs **+0.310 scaled**. At 2× width the penalty was cut from +0.20 to +0.08.
 The default run's attention products ran away (2.7e5 → 1.6e7). The scaled run's stayed ~1000× smaller (2.2e4 at step 2500) but were

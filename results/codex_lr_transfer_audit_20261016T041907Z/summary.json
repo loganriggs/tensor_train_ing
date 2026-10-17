@@ -1,0 +1,147 @@
+{
+  "kind": "partial_lr_transfer_snapshot",
+  "created_utc": "2026-10-16T04:19:08.184488+00:00",
+  "training_runs_owned_by": "Claude",
+  "rows": [
+    {
+      "name": "w512_lr0.00015",
+      "ce": 6.217107206814864,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00015/eval/evaluation.json",
+      "evaluation_sha256": "bdfeced1b6afb6f1381dd2099dffe13cde9e9c00ef516c98731e61f9732d5764",
+      "checkpoint_manifest_sha256": "94ee5ba0537a952b8d752ba5f478265af800a5cf020de919caf93fc0c1babb2d"
+    },
+    {
+      "name": "w512_lr0.00045",
+      "ce": 5.968885698973188,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00045/eval/evaluation.json",
+      "evaluation_sha256": "20d6d2a7bd132c6899d5ca86f415738879357f7d65c148dc9d9d913e200cbc14",
+      "checkpoint_manifest_sha256": "7737378b542719795538db9452c7cb2f6fdb0e3d3c641a398ce4c8c173594851"
+    },
+    {
+      "name": "w512_lr0.00135",
+      "ce": 6.016953080273114,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00135/eval/evaluation.json",
+      "evaluation_sha256": "a8ed4121a972775ffc7b48155684fcba52edf7ea1426660ade8275439dbb1987",
+      "checkpoint_manifest_sha256": "ed5d9cff595508d114ef964b7a7064245a9dbc41ea94940a6edc30ff56b789f4"
+    },
+    {
+      "name": "w512_lr0.004",
+      "ce": 7.228777106895401,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.004/eval/evaluation.json",
+      "evaluation_sha256": "9816b5a2bc14cc41837b132f0cbe122d800d3763ebac7e3e5a46ffe744803827",
+      "checkpoint_manifest_sha256": "3c3e1e78808b95bf09c9e47094a01ae799814ef19857023535bd81a7a624756c"
+    },
+    {
+      "name": "w1024_lr0.00015",
+      "ce": 6.004972411625695,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00015/eval/evaluation.json",
+      "evaluation_sha256": "a03c94821772c88b6ad99deec2999eb57ee5db65b7cb9368362676ee80dc686e",
+      "checkpoint_manifest_sha256": "7d10fa75163e1679ea4d544f9b4630cd5ad3d6dd98677406a8d93cf6f2b98143"
+    },
+    {
+      "name": "w1024_lr0.00045",
+      "ce": 5.912247703299321,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "steps": 585,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00045/eval/evaluation.json",
+      "evaluation_sha256": "d0b0622ea64910c262af4d3dd828f2b5e16ca548c3dfcff42a42e76aaac0a70c",
+      "checkpoint_manifest_sha256": "aa5c48cdfcef30c4f7ed89b014241015751fbc33d8f89ab0db5b2926cee48ab7"
+    }
+  ],
+  "comparisons": [
+    {
+      "left": "w512_lr0.00045",
+      "right": "w512_lr0.00015",
+      "delta_ce_right_minus_left": 0.24822150784167651,
+      "nominal_paired_document_95_ci": [
+        0.23273529154739084,
+        0.2642016032511003
+      ],
+      "prefixes_match": true,
+      "path": "runs/codex_lr_transfer_audit_20261016T041907Z/w512_lr0.00045__vs__w512_lr0.00015/comparison.json"
+    },
+    {
+      "left": "w512_lr0.00045",
+      "right": "w512_lr0.00135",
+      "delta_ce_right_minus_left": 0.04806738129992603,
+      "nominal_paired_document_95_ci": [
+        0.037609043817260754,
+        0.05823225477364997
+      ],
+      "prefixes_match": true,
+      "path": "runs/codex_lr_transfer_audit_20261016T041907Z/w512_lr0.00045__vs__w512_lr0.00135/comparison.json"
+    },
+    {
+      "left": "w512_lr0.00045",
+      "right": "w512_lr0.004",
+      "delta_ce_right_minus_left": 1.2598914079222128,
+      "nominal_paired_document_95_ci": [
+        1.224751236499151,
+        1.2909753806770816
+      ],
+      "prefixes_match": true,
+      "path": "runs/codex_lr_transfer_audit_20261016T041907Z/w512_lr0.00045__vs__w512_lr0.004/comparison.json"
+    },
+    {
+      "left": "w512_lr0.00045",
+      "right": "w1024_lr0.00045",
+      "delta_ce_right_minus_left": -0.05663799567386703,
+      "nominal_paired_document_95_ci": [
+        -0.07104501863980348,
+        -0.04419274962598946
+      ],
+      "prefixes_match": true,
+      "path": "runs/codex_lr_transfer_audit_20261016T041907Z/w512_lr0.00045__vs__w1024_lr0.00045/comparison.json"
+    },
+    {
+      "left": "w1024_lr0.00045",
+      "right": "w1024_lr0.00015",
+      "delta_ce_right_minus_left": 0.09272470832637385,
+      "nominal_paired_document_95_ci": [
+        0.07792504193126548,
+        0.10968989280727509
+      ],
+      "prefixes_match": true,
+      "path": "runs/codex_lr_transfer_audit_20261016T041907Z/w1024_lr0.00045__vs__w1024_lr0.00015/comparison.json"
+    }
+  ],
+  "limitations": [
+    "Snapshot of six completed runs; sweep still active and width-scaled runs not included.",
+    "One training seed, 4,792,320 training targets, 38,131 validation targets in 81 documents from a single-crawl-shard pilot.",
+    "Intervals are nominal paired-document bootstrap intervals, not training-seed variability or multiplicity/search corrected.",
+    "LR optimum transfer and model interpretability are not established by these predictive-loss comparisons.",
+    "No final-test data evaluated."
+  ],
+  "runtime_source_sha256": {
+    "tnlm/evaluate.py": "b32a9a39395a2a892ea24f86552ff004a66d3b94042bcf45ae1d75b462854caa",
+    "tnlm/reporting.py": "68ae3c93e328946e914c3ecf131ca5180b15b7064424a7b5b4453fd0dcb332d6"
+  }
+}

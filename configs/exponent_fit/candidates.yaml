@@ -1,0 +1,90 @@
+- name: w512ws_lr0.00032_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.00032
+      seed: 101
+- name: w512ws_lr0.00064_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.00064
+      seed: 101
+- name: w512ws_lr0.0009_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.0009
+      seed: 101
+- name: w1024ws_lr0.00032_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.00032
+      seed: 101
+- name: w1024ws_lr0.00064_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.00064
+      seed: 101
+- name: w1024ws_lr0.0009_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.0009
+      seed: 101
+- name: w2048ws_lr0.00032_s101
+  overrides:
+    model:
+      d_model: 2048
+      heads: 32
+      d_mlp: 6784
+      activation_checkpointing: true
+    train:
+      lr: 0.00032
+      seed: 101
+- name: w2048ws_lr0.00064_s101
+  overrides:
+    model:
+      d_model: 2048
+      heads: 32
+      d_mlp: 6784
+      activation_checkpointing: true
+    train:
+      lr: 0.00064
+      seed: 101
+- name: w2048ws_lr0.0009_s101
+  overrides:
+    model:
+      d_model: 2048
+      heads: 32
+      d_mlp: 6784
+      activation_checkpointing: true
+    train:
+      lr: 0.0009
+      seed: 101

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/traced": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.006518577789692252,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 55.62190102605382
+    },
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/untraced": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.004547730695703988,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 38.805002380977385
+    },
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/traced_fixed": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.0045347201957727425,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 38.693986026977655
+    },
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/repeat": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.00445701763590095,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 38.030963472963776
+    },
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/verify-filter": {
+      "status": "failed",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.00013043058669030304,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.0,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1.1129417209886014
+    },
+    "/workspace/tensor_train_ing/runs/codex_gpu_efficiency_20261016/verify-filter-v2": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.00013174539433201589,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.0,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1.1241607480333187
+    }
+  }
+}

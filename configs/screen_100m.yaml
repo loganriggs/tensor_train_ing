@@ -1,0 +1,36 @@
+# Stage B screening model (brief §7 "Screen"): 12 x 512, polynomial attention, ~101.06M matrix params.
+# Data/eval manifests are produced by `tnlm prepare_data`; replace the REQUIRED_* placeholders.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: true
+  spend_ledger: runs/spend.json
+  stage: B
+  gpu_hourly_rate_usd: REQUIRED_ACTUAL_RATE
+model:
+  layers: 12
+  d_model: 512
+  heads: 8
+  d_key: 64
+  d_value: 64
+  d_mlp: 1664
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  attention_backend: auto
+  loss_chunk_tokens: 4096
+data:
+  manifest: REQUIRED_IMMUTABLE_MANIFEST
+  context: 512
+evaluation:
+  validation_manifest: REQUIRED_VALIDATION_MANIFEST
+train:
+  deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
+  optimizer: adamw
+  lr: 4.5e-4
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 100000000
+  compile: true
+  seed: 101

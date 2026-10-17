@@ -1,0 +1,257 @@
+{
+  "kind": "partial_lr_transfer_snapshot",
+  "created_utc": "2026-10-16T04:42:03.440629+00:00",
+  "rows": [
+    {
+      "name": "w512_lr0.00015",
+      "width": 512,
+      "lr": 0.00015,
+      "width_scaling_base": null,
+      "ce": 6.217107206814864,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00015/eval/evaluation.json",
+      "evaluation_sha256": "bdfeced1b6afb6f1381dd2099dffe13cde9e9c00ef516c98731e61f9732d5764",
+      "checkpoint_manifest_sha256": "94ee5ba0537a952b8d752ba5f478265af800a5cf020de919caf93fc0c1babb2d",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w512_lr0.00045",
+      "width": 512,
+      "lr": 0.00045,
+      "width_scaling_base": null,
+      "ce": 5.968885698973188,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00045/eval/evaluation.json",
+      "evaluation_sha256": "20d6d2a7bd132c6899d5ca86f415738879357f7d65c148dc9d9d913e200cbc14",
+      "checkpoint_manifest_sha256": "7737378b542719795538db9452c7cb2f6fdb0e3d3c641a398ce4c8c173594851",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w512_lr0.00135",
+      "width": 512,
+      "lr": 0.00135,
+      "width_scaling_base": null,
+      "ce": 6.016953080273114,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.00135/eval/evaluation.json",
+      "evaluation_sha256": "a8ed4121a972775ffc7b48155684fcba52edf7ea1426660ade8275439dbb1987",
+      "checkpoint_manifest_sha256": "ed5d9cff595508d114ef964b7a7064245a9dbc41ea94940a6edc30ff56b789f4",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w512_lr0.004",
+      "width": 512,
+      "lr": 0.004,
+      "width_scaling_base": null,
+      "ce": 7.228777106895401,
+      "parameters": 101069312,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w512_lr0.004/eval/evaluation.json",
+      "evaluation_sha256": "9816b5a2bc14cc41837b132f0cbe122d800d3763ebac7e3e5a46ffe744803827",
+      "checkpoint_manifest_sha256": "3c3e1e78808b95bf09c9e47094a01ae799814ef19857023535bd81a7a624756c",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.00015",
+      "width": 1024,
+      "lr": 0.00015,
+      "width_scaling_base": null,
+      "ce": 6.004972411625695,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00015/eval/evaluation.json",
+      "evaluation_sha256": "a03c94821772c88b6ad99deec2999eb57ee5db65b7cb9368362676ee80dc686e",
+      "checkpoint_manifest_sha256": "7d10fa75163e1679ea4d544f9b4630cd5ad3d6dd98677406a8d93cf6f2b98143",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.00045",
+      "width": 1024,
+      "lr": 0.00045,
+      "width_scaling_base": null,
+      "ce": 5.912247703299321,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00045/eval/evaluation.json",
+      "evaluation_sha256": "d0b0622ea64910c262af4d3dd828f2b5e16ca548c3dfcff42a42e76aaac0a70c",
+      "checkpoint_manifest_sha256": "aa5c48cdfcef30c4f7ed89b014241015751fbc33d8f89ab0db5b2926cee48ab7",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.00135",
+      "width": 1024,
+      "lr": 0.00135,
+      "width_scaling_base": null,
+      "ce": 6.194910152924277,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00135/eval/evaluation.json",
+      "evaluation_sha256": "6d3ee561753be843f4180688bf58373b6e9898e281f6d478c1399437d14a14df",
+      "checkpoint_manifest_sha256": "f41f00180e98f8aa2d8e3e291552a465e13198ed4a4d6fff0910eb5e36b55223",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.004",
+      "width": 1024,
+      "lr": 0.004,
+      "width_scaling_base": null,
+      "ce": 7.619512905335089,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.004/eval/evaluation.json",
+      "evaluation_sha256": "eac154652ffc50aa3a390c9d047354a66a0f20929c28825413fa1f42261e4698",
+      "checkpoint_manifest_sha256": "80c95b6017eba370e7529ccab2f090307296cc9f207bed61ddba463ded952df2",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.00015_wsb512",
+      "width": 1024,
+      "lr": 0.00015,
+      "width_scaling_base": 512,
+      "ce": 6.073796232595226,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00015_wsb512/eval/evaluation.json",
+      "evaluation_sha256": "7501e3fe0e2f6e382315b2da12c1c11ec22e3db79ece7c166acb2444cc6b1063",
+      "checkpoint_manifest_sha256": "db965215a04a1ecf62cd00e3ad3a50820fea86df7023a0ddb28370d58d6eb432",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    },
+    {
+      "name": "w1024_lr0.00045_wsb512",
+      "width": 1024,
+      "lr": 0.00045,
+      "width_scaling_base": 512,
+      "ce": 5.876489918219875,
+      "parameters": 303588352,
+      "training_tokens": 4792320,
+      "training_steps": 585,
+      "warmup_steps": 100,
+      "warmup_dominates_completed_segment": true,
+      "validation_targets": 38131,
+      "documents": 81,
+      "evaluation_path": "/workspace/tensor_train_ing/runs/lr_transfer/w1024_lr0.00045_wsb512/eval/evaluation.json",
+      "evaluation_sha256": "910d7f4848f7fcf5a8e41bf455fc5297a1bc1ba622e024f5bb608e24c8e40275",
+      "checkpoint_manifest_sha256": "2366826894d459daa9691f3c076e02ea4989a1db31cea0a3e5833c9fecd724cc",
+      "available_prefix_plan_sha256": "3af028536be9f3d1e996043b99792363c5c4a3f2e875b295a0263e6fbb5bfd66",
+      "target_plan_sha256": "f870961d8aa578ada30aac4fa987062685fe6925a5a0a0252254f686633f86e4"
+    }
+  ],
+  "comparisons": [
+    {
+      "left": "w1024_lr0.00045",
+      "right": "w1024_lr0.00015",
+      "delta_ce_right_minus_left": 0.09272470832637385,
+      "nominal_document_95_ci": [
+        0.07792504193126548,
+        0.10968989280727509
+      ]
+    },
+    {
+      "left": "w1024_lr0.00045",
+      "right": "w1024_lr0.00135",
+      "delta_ce_right_minus_left": 0.2826624496249563,
+      "nominal_document_95_ci": [
+        0.26032070667970364,
+        0.3079801856319997
+      ]
+    },
+    {
+      "left": "w1024_lr0.00045",
+      "right": "w1024_lr0.004",
+      "delta_ce_right_minus_left": 1.7072652020357684,
+      "nominal_document_95_ci": [
+        1.6597169965423129,
+        1.751710641899118
+      ]
+    },
+    {
+      "left": "w1024_lr0.00045",
+      "right": "w1024_lr0.00045_wsb512",
+      "delta_ce_right_minus_left": -0.03575778507944601,
+      "nominal_document_95_ci": [
+        -0.04442081409671228,
+        -0.026565251970294527
+      ]
+    },
+    {
+      "left": "w512_lr0.00045",
+      "right": "w1024_lr0.00045_wsb512",
+      "delta_ce_right_minus_left": -0.09239578075331303,
+      "nominal_document_95_ci": [
+        -0.10438521883774375,
+        -0.08175140516277393
+      ]
+    },
+    {
+      "left": "w1024_lr0.00045_wsb512",
+      "right": "w1024_lr0.00015_wsb512",
+      "delta_ce_right_minus_left": 0.19730631437535173,
+      "nominal_document_95_ci": [
+        0.1813779616309329,
+        0.21573307574747327
+      ]
+    }
+  ],
+  "scope": "Existing Claude reports only; one seed, single-crawl pilot, uncooled partial-rung endpoints. Nominal paired document uncertainty, no HPO correction or seed variance. Width-scaled grid incomplete; no final-test data or new model forwards. No interpretation retention conclusion.",
+  "source_sha256": {
+    "tnlm/evaluate.py": "b32a9a39395a2a892ea24f86552ff004a66d3b94042bcf45ae1d75b462854caa",
+    "/workspace/tensor_train_ing/runs/lr_transfer/summary.jsonl": "882b5660d3c3eadffd4a94fc2232e3493b3bd4537a2584d36b518e528e96eb42"
+  }
+}

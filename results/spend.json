@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/smoke": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.002836111244878901,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "A",
+      "kind": "runtime",
+      "elapsed_seconds": 24.20004854601575
+    }
+  }
+}

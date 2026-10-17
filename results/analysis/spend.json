@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/analysis/w1024ws_s202_gpu_rw4_r2": {
+      "status": "failed",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.0011624526800442932,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s202/w1024ws_lr0.00045_s202/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 9.919008409953676
+    },
+    "/workspace/tensor_train_ing/runs/analysis/w1024ws_s202_gpu_rwfull_r2": {
+      "status": "failed",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.0011768935079407448,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s202/w1024ws_lr0.00045_s202/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 10.042229506012518
+    }
+  }
+}

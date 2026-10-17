@@ -1,0 +1,39 @@
+# Stage D confirmation model (brief §7 "Confirmation"): 24 x 1024, ~504.10M matrix params.
+# Uses the width+depth parameterization validated by the joint 24x1024 sweep (docs/scaling.md); base LR stays 4.5e-4.
+# Data/eval manifests are produced by `tnlm prepare_data`; replace the REQUIRED_* placeholders.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: true
+  spend_ledger: runs/spend.json
+  stage: D
+  gpu_hourly_rate_usd: REQUIRED_ACTUAL_RATE
+model:
+  layers: 24
+  d_model: 1024
+  heads: 16
+  d_key: 64
+  d_value: 64
+  d_mlp: 3392
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  attention_backend: auto
+  width_scaling_base: 512   # hidden LR x (512/d)^0.5, logits x (512/d)^0.5 (docs/scaling.md)
+  depth_residual_base: 12   # branch x 12/L, D/O init at 12 layers
+  loss_chunk_tokens: 4096
+data:
+  manifest: REQUIRED_IMMUTABLE_MANIFEST
+  context: 512
+evaluation:
+  validation_manifest: REQUIRED_VALIDATION_MANIFEST
+train:
+  deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
+  optimizer: adamw
+  lr: 4.5e-4
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 1000000000
+  compile: true
+  seed: 101

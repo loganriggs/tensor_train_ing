@@ -1,0 +1,80 @@
+- name: w2048_lr0.00045_s101
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w2048ws_lr0.00045_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w2048_lr0.00135_s101
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 101
+- name: w2048ws_lr0.00135_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00135
+      seed: 101
+- name: w2048_lr0.00045_s202
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 202
+- name: w2048ws_lr0.00045_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00045
+      seed: 202
+- name: w2048_lr0.00135_s202
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 202
+- name: w2048ws_lr0.00135_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00135
+      seed: 202
+- name: w2048wsfwd_lr0.00045_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00045
+      seed: 101
+      weight_decay_hidden: 0.05
+- name: w2048wsfwd_lr0.00135_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00135
+      seed: 101
+      weight_decay_hidden: 0.05
+- name: w2048wsfwd_lr0.00045_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00045
+      seed: 202
+      weight_decay_hidden: 0.05
+- name: w2048wsfwd_lr0.00135_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+    train:
+      lr: 0.00135
+      seed: 202
+      weight_decay_hidden: 0.05

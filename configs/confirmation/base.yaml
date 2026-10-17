@@ -1,0 +1,40 @@
+# Confirmation of the width-transfer result (docs/scaling.md) at 50M tokens, cooled, 2 seeds, on the
+# independent 320M FineWeb confirmation subset (manifest d93d1555...). Candidates: candidates.yaml.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: false
+  spend_ledger: /workspace/tensor_train_ing/runs/confirmation/spend.json
+  stage: C
+  gpu_hourly_rate_usd: 0.4219   # vastai dph_total, RTX 5000 Ada instance, 2026-10-16
+  milestone_tokens: []          # screening rung: no token-milestone full-state saves
+model:
+  layers: 12
+  d_model: 512
+  heads: 8
+  d_key: 64
+  d_value: 64
+  d_mlp: 1664
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  loss_chunk_tokens: 4096
+data:
+  manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  context: 512
+  micro_batch_size: 16
+evaluation:
+  validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  seed: 0
+train:
+  deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
+  optimizer: adamw
+  lr: 4.5e-4
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 50003968   # 6104 updates x 8192
+  schedule: constant_with_separate_cooldown
+  cooldown_fraction: 0.1
+  compile: true
+  seed: 101

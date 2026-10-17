@@ -1,0 +1,37 @@
+# LR-minimum transfer check across width at fixed depth/head dim (brief §5). Generated variants override
+# model.d_model/heads/d_mlp, train.lr and optionally model.width_scaling_base.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: false
+  spend_ledger: runs/spend.json
+  stage: A
+  gpu_hourly_rate_usd: 0.4219   # vastai dph_total for this RTX 5000 Ada instance, 2026-10-16
+model:
+  layers: 12
+  d_model: 512
+  heads: 8
+  d_key: 64
+  d_value: 64
+  d_mlp: 1664
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  loss_chunk_tokens: 4096
+data:
+  manifest: data/fineweb_pilot_5m/manifest.json
+  context: 512
+  micro_batch_size: 16
+evaluation:
+  validation_manifest: data/fineweb_pilot_5m/manifest.json
+  seed: 0
+train:
+  deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
+  optimizer: adamw
+  lr: 4.5e-4
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 4800000
+  compile: true
+  seed: 101

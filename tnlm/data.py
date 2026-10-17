@@ -1,0 +1,849 @@
+"""Immutable document datasets and deterministic packed batches.
+
+Targets never cross document boundaries; padding targets are -100. Packing is
+row-local, and document fragments retain original token offsets in documents.jsonl.
+"""
+from __future__ import annotations
+
+import hashlib
+import heapq
+import sqlite3
+import importlib.metadata
+import json
+import math
+import os
+import shutil
+import random
+from pathlib import Path
+
+import numpy as np
+import torch
+
+
+SPLIT_ORDER = ('train', 'val', 'test', 'calibration')
+PACKING_VERSION = 'document-shuffle-row-overlap-incremental-v2'
+
+
+def _sha(path):
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for block in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+
+def manifest_hash(path):
+    """SHA256 of a completed manifest, validating its independently stored digest."""
+    path = Path(path)
+    if path.is_dir():
+        path /= 'manifest.json'
+    digest = _sha(path)
+    if path.with_name('manifest.sha256').read_text().strip() != digest:
+        raise ValueError('manifest checksum mismatch')
+    return digest
+
+
+def validate_tokenizer_compatibility(training_manifest, validation_manifest, *, allow_test_only=False):
+    """Require the same declared tokenization semantics for checkpoint probes.
+
+    Production fingerprints bind vocabulary ranks, regex and special tokens.
+    Injected offline fixtures carry no such fingerprint; their weaker metadata
+    agreement is explicitly labeled and cannot match production data.
+    """
+    records, hashes = [], []
+    for source in (training_manifest, validation_manifest):
+        path = Path(source)
+        if path.is_dir():
+            path /= 'manifest.json'
+        hashes.append(manifest_hash(path))
+        record = json.loads(path.read_text()).get('tokenizer')
+        if not isinstance(record, dict):
+            raise ValueError('missing tokenizer identity in dataset manifest')
+        records.append(record)
+    left, right = records
+    fixture = any(record.get('injected') or record.get('test_only') for record in records)
+    if fixture:
+        if not allow_test_only:
+            raise ValueError('test-only tokenizer data is restricted to CPU fixture probes')
+        if (any(record.get('injected') is not True or record.get('test_only') is not True
+                for record in records) or left != right or not left.get('name')
+                or type(left.get('eos_id')) is not int):
+            raise ValueError('incompatible test-only tokenizer metadata')
+        identity = dict(left)
+        status = 'test_only_metadata_match'
+    else:
+        fields = ('name', 'eos_id', 'fingerprint_sha256', 'vocabulary_sha256',
+                  'regex_pattern', 'special_tokens')
+        for record in records:
+            if (any(key not in record for key in fields)
+                    or not isinstance(record['name'], str) or not record['name']
+                    or type(record['eos_id']) is not int
+                    or not isinstance(record['regex_pattern'], str)
+                    or not isinstance(record['special_tokens'], dict)):
+                raise ValueError('incomplete tokenizer identity in dataset manifest')
+            if record['name'] != 'gpt2' or record['eos_id'] != 50256:
+                raise ValueError('production tokenizer must use the pinned GPT2 encoding and EOS')
+            for key in ('fingerprint_sha256', 'vocabulary_sha256'):
+                value = record[key]
+                if (not isinstance(value, str) or len(value) != 64
+                        or any(c not in '0123456789abcdef' for c in value)):
+                    raise ValueError('invalid tokenizer fingerprint in dataset manifest')
+        identity = {key: left[key] for key in fields}
+        if identity != {key: right[key] for key in fields}:
+            raise ValueError('validation tokenizer identity differs from training tokenizer')
+        status = 'fingerprint_match'
+    return {'status': status, 'training_manifest_sha256': hashes[0],
+            'validation_manifest_sha256': hashes[1], 'identity': identity,
+            'scope': 'checksum-bound declared tokenizer identity; injected fixtures are not production evidence'}
+
+
+def _digest(text):
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+
+
+def _json(path, value):
+    Path(path).write_text(json.dumps(value, sort_keys=True, indent=2) + '\n')
+
+
+def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
+                 max_documents=100_000, tokenizer=None, split_fractions=None,
+                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None):
+    """Freeze bounded documents. HF mode requires a full commit and explicit shards.
+
+    Local revisions are user-supplied labels supplemented by source SHA256. Tokens
+    map to source document token offsets, not character offsets (BPE may split bytes).
+    Existing output directories are rejected to prevent accidental replacement.
+    """
+    if not revision or revision in ('main', 'master', 'latest'):
+        raise ValueError('an immutable source revision is required')
+    if max_tokens <= 0 or max_documents <= 0:
+        raise ValueError('positive data bounds required')
+    if (source_jsonl is None) == (hf_dataset is None):
+        raise ValueError('specify exactly one local JSONL or HF dataset')
+    fractions = {'train': .97, 'val': .01, 'test': .01, 'calibration': .01} if split_fractions is None else split_fractions
+    if set(fractions) != {'train', 'val', 'test', 'calibration'} or any(not math.isfinite(v) or v < 0 for v in fractions.values()) or abs(sum(fractions.values()) - 1) > 1e-9:
+        raise ValueError('split fractions must specify train/val/test/calibration and sum to one')
+    fractions = {split: fractions[split] for split in SPLIT_ORDER}
+    if tokenizer is None:
+        import tiktoken
+        tokenizer = tiktoken.get_encoding('gpt2')
+        ranks = sorted((k.hex(), v) for k, v in tokenizer._mergeable_ranks.items())
+        tok_meta = {'name': 'gpt2', 'package': 'tiktoken', 'version': importlib.metadata.version('tiktoken'),
+                    'vocabulary_sha256': _digest(json.dumps(ranks)), 'eos_id': tokenizer.eot_token,
+                    'special_tokens': tokenizer._special_tokens,
+                    'regex_pattern': tokenizer._pat_str}
+        tok_meta['fingerprint_sha256'] = _digest(json.dumps({
+            'ranks': ranks, 'regex_pattern': tokenizer._pat_str,
+            'special_tokens': tokenizer._special_tokens}, sort_keys=True))
+    else:
+        tok_meta = {'name': getattr(tokenizer, 'name', type(tokenizer).__name__),
+                    'injected': True, 'test_only': True, 'eos_id': tokenizer.eot_token}
+    if tokenizer.eot_token != 50256:
+        raise ValueError('GPT2 EOS must be 50256')
+    if source_jsonl is not None:
+        source_jsonl = Path(source_jsonl).resolve()
+        source = {'kind': 'jsonl', 'revision': revision, 'path': str(source_jsonl), 'sha256': _sha(source_jsonl)}
+        def records():
+            with source_jsonl.open() as f:
+                for line_number, line in enumerate(f, 1):
+                    if line.strip():
+                        yield json.loads(line), line_number
+    else:
+        if len(revision) != 40 or any(c not in '0123456789abcdef' for c in revision.lower()) or not hf_data_files:
+            raise ValueError('HF requires full 40-character commit and explicit data_files')
+        shards = [hf_data_files] if isinstance(hf_data_files, str) else hf_data_files
+        if not isinstance(shards, (list, tuple)) or not all(isinstance(x, str) and x and not any(c in x for c in '*?[') for x in shards):
+            raise ValueError('HF data_files must be explicit shard paths, without patterns')
+        if not isinstance(hf_shard_checksums, dict) or set(hf_shard_checksums) != set(shards):
+            raise ValueError('HF shard_checksums must cover every explicit shard exactly')
+        if any(not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest.lower()) for digest in hf_shard_checksums.values()):
+            raise ValueError('HF shard checksums must be SHA256 hex digests')
+        if len(set(shards)) != len(shards):
+            raise ValueError('HF shard paths must be unique')
+        if hf_local_shards is not None and set(hf_local_shards) != set(shards):
+            raise ValueError('HF local shard paths must cover every declared shard exactly')
+        verified = []
+        for shard in sorted(shards):
+            if hf_local_shards is None:
+                from huggingface_hub import hf_hub_download
+                path = Path(hf_hub_download(repo_id=hf_dataset, repo_type='dataset',
+                                            revision=revision, filename=shard))
+            else:
+                path = Path(hf_local_shards[shard])
+            if _sha(path) != hf_shard_checksums[shard].lower():
+                raise ValueError(f'HF raw shard checksum mismatch: {shard}')
+            verified.append((shard, path))
+        source = {'kind': 'huggingface', 'dataset': hf_dataset, 'config': hf_config,
+                  'revision': revision, 'shards': sorted(shards),
+                  'shard_sha256': {k: v.lower() for k, v in hf_shard_checksums.items()},
+                  'shard_hash_verification': 'SHA256 of every local raw shard verified before parquet reading'}
+        def records():
+            import pyarrow.parquet as pq
+            for shard, path in verified:
+                row = 0
+                for batch in pq.ParquetFile(path).iter_batches(batch_size=256):
+                    for record in batch.to_pylist():
+                        yield record, {'shard': shard, 'row': row}
+                        row += 1
+                if _sha(path) != hf_shard_checksums[shard].lower():
+                    raise ValueError(f'HF raw shard changed during reading: {shard}')
+    out = Path(output_dir)
+    # The declared source universe is fully scanned. The heap stores only the K
+    # smallest domain-separated ID hashes; text and duplicate detection use disk.
+    candidates = []
+    scan_records = unique_documents = 0
+    ledger_path = out / '.seen.sqlite'
+    ledger = sqlite3.connect(ledger_path)
+    ledger.execute('CREATE TABLE seen (id TEXT PRIMARY KEY, content_hash TEXT NOT NULL)')
+    ledger.execute('CREATE TABLE candidates (id TEXT PRIMARY KEY, text TEXT NOT NULL, source_offset TEXT NOT NULL, content_hash TEXT NOT NULL)')
+    try:
+        for record, source_offset in records():
+            scan_records += 1
+            text = record.get('text')
+            if not isinstance(text, str):
+                raise ValueError('every record requires string text')
+            content_hash = _digest(text)
+            stable_id = record.get('id', record.get('doc_id'))
+            doc_id = content_hash if stable_id is None else str(stable_id)
+            previous = ledger.execute('SELECT content_hash FROM seen WHERE id=?', (doc_id,)).fetchone()
+            if previous:
+                if previous[0] != content_hash:
+                    raise ValueError(f'conflicting content for duplicate document ID: {doc_id}')
+                continue
+            ledger.execute('INSERT INTO seen VALUES (?, ?)', (doc_id, content_hash))
+            unique_documents += 1
+            rank = int(_digest('selection\0' + doc_id), 16)
+            candidate = (-rank, doc_id)
+            retain = len(candidates) < max_documents or rank < -candidates[0][0]
+            if retain:
+                if len(candidates) == max_documents:
+                    evicted = heapq.heapreplace(candidates, candidate)
+                    ledger.execute('DELETE FROM candidates WHERE id=?', (evicted[1],))
+                else:
+                    heapq.heappush(candidates, candidate)
+                ledger.execute('INSERT INTO candidates VALUES (?, ?, ?, ?)',
+                               (doc_id, text, json.dumps(source_offset), content_hash))
+        if source_jsonl is not None and _sha(source_jsonl) != source['sha256']:
+            raise ValueError('local source changed during preparation')
+    except BaseException:
+        ledger.close()
+        raise
+    docs, total = [], 0
+    streams = {split: (out / f'{split}.tokens.bin').open('wb') for split in fractions}
+    offsets = dict.fromkeys(fractions, 0)
+    try:
+        for negative_rank, doc_id in sorted(candidates, key=lambda c: (-c[0], c[1])):
+            if total >= max_tokens:
+                break
+            text, serialized_offset, content_hash = ledger.execute(
+                'SELECT text, source_offset, content_hash FROM candidates WHERE id=?', (doc_id,)).fetchone()
+            source_offset = json.loads(serialized_offset)
+            processed = text.replace('\r\n', '\n').replace('\r', '\n')
+            encoded = tokenizer.encode(processed, allowed_special=set(), disallowed_special=())
+            tokens = (encoded + [tokenizer.eot_token])[:max_tokens - total]
+            if not tokens:
+                continue
+            if min(tokens) < 0 or max(tokens) >= 50257:
+                raise ValueError('tokens must belong to the real GPT2 vocabulary')
+            # Integer thresholds avoid hash-to-float rounding at split boundaries.
+            rank = -negative_rank
+            split_rank = int(_digest(doc_id), 16)
+            cumulative = 0.
+            for split, fraction in fractions.items():
+                cumulative += fraction
+                if split_rank < int(cumulative * 2**256):
+                    break
+            start = offsets[split]
+            np.asarray(tokens, dtype='<i4').tofile(streams[split])
+            offsets[split] += len(tokens)
+            eos_included = len(tokens) == len(encoded) + 1
+            docs.append({'id': doc_id, 'numeric_id': len(docs), 'split': split,
+                         'selection_sha256': f'{rank:064x}',
+                         'content_sha256': content_hash, 'processed_sha256': _digest(processed),
+                         'source_offset': source_offset, 'token_start': start, 'token_end': offsets[split],
+                         'source_token_start': 0, 'source_token_end': len(tokens),
+                         'processed_token_start': 0, 'processed_token_end': min(len(tokens), len(encoded)),
+                         'synthetic_eos_token_offset': len(encoded) if eos_included else None,
+                         'truncated': not eos_included})
+            total += len(tokens)
+    finally:
+        for stream in streams.values():
+            stream.close()
+        ledger.close()
+        ledger_path.unlink(missing_ok=True)
+        Path(str(ledger_path) + '-journal').unlink(missing_ok=True)
+    with (out / 'documents.jsonl').open('w') as f:
+        for doc in docs:
+            f.write(json.dumps(doc, sort_keys=True) + '\n')
+    artifacts = {p.name: _sha(p) for p in sorted(out.iterdir()) if p.is_file()}
+    manifest = {'format_version': 1, 'source': source, 'tokenizer': tok_meta,
+                'split_fractions': fractions, 'split_order': list(SPLIT_ORDER),
+                'tokens': offsets, 'documents': len(docs),
+                'scan_records': scan_records, 'scan_unique_documents': unique_documents,
+                'max_tokens': max_tokens, 'max_documents': max_documents,
+                'preprocessing': 'CRLF/CR to LF; otherwise unchanged',
+                'deduplication': 'identical stable-ID/content duplicates collapse; conflicting contents rejected',
+                'membership': 'SHA256(UTF8(stable document ID)), fixed fraction intervals',
+                'hash_domains': {'selection': 'UTF8(selection + NUL + stable document ID)',
+                                 'split': 'UTF8(stable document ID)'},
+                'bounded_selection': 'smallest domain-separated selection SHA256 ranks across entire declared source; canonical rank order then token cap',
+                'preparation_cost': 'full declared source scan and HF raw-shard download/hash; output token/document bounds do not bound scan cost',
+                'token_offset_semantics': 'source_token_* are legacy processed document stream offsets including synthetic EOS; processed_token_* exclude EOS; no original character/byte alignment',
+                'boundary_loss_policy': 'ignore cross-document transitions and padding',
+                'artifacts': artifacts}
+    # Sidecar precedes the manifest: manifest presence is the completion marker.
+    encoded_manifest = json.dumps(manifest, sort_keys=True, indent=2) + '\n'
+    (out / 'manifest.sha256').write_text(_digest(encoded_manifest) + '\n')
+    for artifact in out.iterdir():
+        with artifact.open('rb') as f:
+            os.fsync(f.fileno())
+    temporary_manifest = out / '.manifest.json.tmp'
+    with temporary_manifest.open('w') as f:
+        f.write(encoded_manifest)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(temporary_manifest, out / 'manifest.json')
+    directory_fd = os.open(out, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+    parent_fd = os.open(out.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(parent_fd)
+    finally:
+        os.close(parent_fd)
+    return out / 'manifest.json'
+
+
+def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
+                 max_documents=100_000, tokenizer=None, split_fractions=None,
+                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None):
+    """Prepare an immutable dataset; remove this invocation's output on failure.
+
+    HF raw-shard SHA256 values are checked against downloaded pinned files or
+    hf_local_shards={declared_path: local_path}. Every declared shard is fully read.
+    Output bounds do not bound source scanning/download costs; choose shards first.
+    Injected tokenizers mark test-only data.
+    Successful publication fsyncs all files and atomically installs the manifest.
+    """
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=False)
+    try:
+        return _prepare_data(out, source_jsonl=source_jsonl, revision=revision,
+                             max_tokens=max_tokens, max_documents=max_documents,
+                             tokenizer=tokenizer, split_fractions=split_fractions,
+                             hf_dataset=hf_dataset, hf_config=hf_config,
+                             hf_data_files=hf_data_files, hf_shard_checksums=hf_shard_checksums,
+                             hf_local_shards=hf_local_shards)
+    except BaseException:
+        shutil.rmtree(out)
+        raise
+
+
+class PackedSampler:
+    """Deterministic epoch permutations, row packing, and resumable next-batch order."""
+    def __init__(self, manifest, split='train', batch_size=1, context=512, seed=0):
+        self.path = Path(manifest)
+        if self.path.is_dir():
+            self.path /= 'manifest.json'
+        self.manifest_hash = manifest_hash(self.path)
+        self.manifest = json.loads(self.path.read_text())
+        root = self.path.parent
+        for name, expected in self.manifest['artifacts'].items():
+            if Path(name).name != name or _sha(root / name) != expected:
+                raise ValueError(f'artifact checksum mismatch: {name}')
+        if split not in self.manifest['tokens'] or batch_size <= 0 or context <= 0:
+            raise ValueError('invalid split or batch shape')
+        self.split, self.batch_size, self.context, self.seed = split, batch_size, context, seed
+        required = {'documents.jsonl', *(f'{name}.tokens.bin' for name in SPLIT_ORDER)}
+        if not required.issubset(self.manifest['artifacts']):
+            raise ValueError('dataset manifest lacks required metadata/token artifacts')
+        if self.manifest.get('format_version') != 1:
+            raise ValueError('unsupported dataset format')
+        counts = self.manifest['tokens']
+        if set(counts) != set(SPLIT_ORDER) or any(type(n) is not int or n < 0 for n in counts.values()):
+            raise ValueError('invalid dataset token counts')
+        for name, count in counts.items():
+            if (root / f'{name}.tokens.bin').stat().st_size != count * 4:
+                raise ValueError(f'token payload size mismatch: {name}')
+        self.docs = []
+        seen_ids, seen_numeric_ids = set(), set()
+        covered = dict.fromkeys(SPLIT_ORDER, 0)
+        document_count = 0
+        with (root / 'documents.jsonl').open() as stream:
+            for line_number, line in enumerate(stream, 1):
+                try:
+                    doc = json.loads(line)
+                    name = doc['split']
+                    doc_id, numeric_id = doc['id'], doc['numeric_id']
+                    start, end = doc['token_start'], doc['token_end']
+                    if name not in covered or not isinstance(doc_id, str) or doc_id in seen_ids:
+                        raise ValueError('invalid split or duplicate document ID')
+                    if type(numeric_id) is not int or numeric_id < 0 or numeric_id in seen_numeric_ids:
+                        raise ValueError('invalid or duplicate numeric document ID')
+                    if type(start) is not int or type(end) is not int or start != covered[name] or not start < end <= counts[name]:
+                        raise ValueError('document token ranges must cover each split contiguously')
+                    for field in ('content_sha256', 'processed_sha256'):
+                        digest = doc[field]
+                        if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest.lower()):
+                            raise ValueError(f'invalid {field}')
+                    seen_ids.add(doc_id)
+                    seen_numeric_ids.add(numeric_id)
+                    covered[name] = end
+                    document_count += 1
+                    if name == split:
+                        self.docs.append(doc)
+                except (KeyError, TypeError, ValueError) as error:
+                    raise ValueError(f'invalid document metadata at line {line_number}: {error}') from error
+        if covered != counts or document_count != self.manifest.get('documents'):
+            raise ValueError('document metadata does not cover declared dataset')
+        if not self.docs:
+            raise ValueError(f'empty split: {split}')
+        self.tokens = np.memmap(root / f'{split}.tokens.bin', dtype='<i4', mode='r')
+        self.packing_version = PACKING_VERSION
+        self.epoch = self.cursor = 0
+        self._order()
+        self._batch_mappings = []
+        self._context_transition = None
+
+    def _permutation(self, epoch):
+        order = list(range(len(self.docs)))
+        random.Random(f'{self.seed}:{epoch}').shuffle(order)
+        return order
+
+    def _count_lengths(self, lengths):
+        # O(documents), including context=1 and very long individual documents.
+        rows = fill = 0
+        width = self.context + 1
+        for remaining in lengths:
+            capacity = width - fill
+            if remaining < capacity:
+                fill += remaining
+                continue
+            rows += 1
+            remaining -= capacity
+            fill = 0
+            if remaining:
+                remaining += 1
+                complete = (remaining - 1) // self.context
+                rows += complete
+                fill = remaining - complete * self.context
+                if complete and fill == 1:
+                    fill = 0
+        return rows, fill
+
+    def _order(self):
+        # A one-row replay mask belongs only to its source epoch. A terminal
+        # singleton can place the fork at epoch end before the mask is consumed.
+        self._context_transition = None
+        self.order = self._permutation(self.epoch)
+        rows, fill = self._count_lengths(self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in self.order)
+        self.epoch_row_count = rows + bool(fill)
+        self.document_cursor = self.token_cursor = 0
+
+    def _seek_row(self, order, cursor):
+        """O(documents) canonical row-boundary seek; no token/row materialization."""
+        d = t = fill = 0
+        remaining_rows = cursor
+        width = self.context + 1
+        while remaining_rows:
+            if d == len(order):
+                if fill and remaining_rows == 1:
+                    return d, 0
+                raise ValueError('invalid canonical row seek')
+            doc = self.docs[order[d]]
+            length = doc['token_end'] - doc['token_start']
+            remaining = length - t
+            if fill == 0 and remaining >= width:
+                count = min(remaining_rows, (remaining - 1) // self.context)
+                t += count * self.context
+                remaining_rows -= count
+                if t == length - 1:
+                    d, t = d + 1, 0
+                continue
+            capacity = width - fill
+            if remaining < capacity:
+                fill += remaining
+                d, t = d + 1, 0
+            else:
+                if remaining == capacity:
+                    d, t = d + 1, 0
+                else:
+                    t += capacity - 1
+                remaining_rows -= 1
+                fill = 0
+        return d, t
+
+    def _fork_position(self, source):
+        epoch, d, t = source['epoch'], source['document_cursor'], source['token_cursor']
+        order = self._permutation(epoch)
+        if d == len(order):
+            epoch, d, t = epoch + 1, 0, 0
+            order = self._permutation(epoch)
+        # Number of complete canonical new-context rows up to the scored token.
+        lengths = [self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order[:d]]
+        cursor, _ = self._count_lengths((*lengths, t + 1))
+        document_cursor, token_cursor = self._seek_row(order, cursor)
+        return epoch, cursor, document_cursor, token_cursor, d, t
+
+    def fork_context(self, context):
+        """Return a new packing stream, preserving consumed-stream target watermark.
+
+        Earlier canonical inputs may replay as prefix but their targets are masked
+        once. This certifies consumed sampler rows, not optimizer quota selection:
+        callers may previously have discarded overflow targets. Read-only corpus
+        storage is shared; original cursor and last-batch mappings stay unchanged.
+        """
+        import copy
+        if type(context) is not int or context <= 0:
+            raise ValueError('context must be a positive integer')
+        original = PackedSampler.state_dict(self)
+        check = copy.copy(self)
+        PackedSampler.load_state_dict(check, original)
+        if context == self.context:
+            return check
+        transition = original.get('context_transition')
+        source = copy.deepcopy(transition['source_state'] if transition else original)
+        fork = copy.copy(self)
+        fork.context = context
+        epoch, cursor, d, t, _, _ = fork._fork_position(source)
+        target = {**source, 'context': context, 'epoch': epoch, 'cursor': cursor,
+                  'document_cursor': d, 'token_cursor': t,
+                  'context_transition': {'version': 1, 'source_context': source['context'], 'source_state': source}}
+        PackedSampler.load_state_dict(fork, target)
+        return fork
+
+    def _next_row(self):
+        """Build one row only, retaining no prior/future packed rows."""
+        row, fill = [], 0
+        width = self.context + 1
+        while self.document_cursor < len(self.order) and fill < width:
+            i = self.order[self.document_cursor]
+            doc = self.docs[i]
+            length = doc['token_end'] - doc['token_start']
+            count = min(width - fill, length - self.token_cursor)
+            row.append((i, doc['token_start'] + self.token_cursor, count))
+            fill += count
+            self.token_cursor += count
+            if self.token_cursor == length:
+                self.document_cursor += 1
+                self.token_cursor = 0
+            elif fill == width:
+                self.token_cursor -= 1
+        return row
+
+    def next_batch(self):
+        idx = torch.full((self.batch_size, self.context), 50256, dtype=torch.long)
+        ids = torch.full_like(idx, -1)
+        targets = torch.full_like(idx, -100)
+        self._batch_mappings = []
+        for b in range(self.batch_size):
+            if self.cursor >= self.epoch_row_count:
+                self.epoch += 1
+                self.cursor = 0
+                self._order()
+            transition = self._context_transition
+            row = self._next_row()
+            self._context_transition = None
+            self.cursor += 1
+            tok, docids, mappings = [], [], []
+            for i, start, count in row:
+                doc = self.docs[i]
+                packed_start = len(tok)
+                mappings.append({'document_id': doc['id'], 'numeric_id': doc['numeric_id'],
+                                 'content_sha256': doc['content_sha256'],
+                                 'processed_sha256': doc['processed_sha256'],
+                                 'source_offset': doc['source_offset'],
+                                 'synthetic_eos_token_offset': doc['synthetic_eos_token_offset'],
+                                 'processed_document_token_count': doc['processed_token_end'],
+                                 'packed_token_start': packed_start,
+                                 'packed_token_end': packed_start + count,
+                                 'source_token_start': start - doc['token_start'],
+                                 'source_token_end': start - doc['token_start'] + count})
+                tok.extend(self.tokens[start:start + count].tolist())
+                docids.extend([self.docs[i]['numeric_id']] * count)
+            self._batch_mappings.append({'epoch': self.epoch, 'row_cursor': self.cursor - 1,
+                                         'input_length': min(self.context, len(tok)),
+                                         'ranges': mappings})
+            n = min(self.context, len(tok))
+            token_row = torch.tensor(tok, dtype=torch.long)
+            document_row = torch.tensor(docids, dtype=torch.long)
+            idx[b, :n] = token_row[:n]
+            ids[b, :n] = document_row[:n]
+            pairs = min(self.context, len(tok) - 1)
+            if pairs > 0:
+                same_document = document_row[:pairs] == document_row[1:pairs + 1]
+                targets[b, :pairs] = torch.where(same_document, token_row[1:pairs + 1], -100)
+            if transition is not None:
+                source = transition['source_state']
+                _, _, _, _, frontier_doc, frontier_token = self._fork_position(source)
+                positions = {self.docs[i]['numeric_id']: position for position, i in enumerate(self.order)}
+                exposure = {'prefix_tokens_at_or_before_watermark': 0, 'masked_prediction_targets': 0}
+                for mapping in mappings:
+                    position = positions[mapping['numeric_id']]
+                    for packed in range(mapping['packed_token_start'], min(n, mapping['packed_token_end'])):
+                        offset = mapping['source_token_start'] + packed - mapping['packed_token_start']
+                        if position < frontier_doc or (position == frontier_doc and offset <= frontier_token):
+                            exposure['prefix_tokens_at_or_before_watermark'] += 1
+                    for packed in range(mapping['packed_token_start'], min(self.context, mapping['packed_token_end'] - 1)):
+                        target_offset = mapping['source_token_start'] + packed - mapping['packed_token_start'] + 1
+                        if position < frontier_doc or (position == frontier_doc and target_offset <= frontier_token):
+                            exposure['masked_prediction_targets'] += int(targets[b, packed] != -100)
+                            targets[b, packed] = -100
+                self._batch_mappings[-1]['context_fork_exposure'] = exposure
+            # Unique negative padding IDs prevent padding from sharing document scope.
+            if n < self.context:
+                ids[b, n:] = -torch.arange(1, self.context - n + 1)
+        return idx, ids, targets
+
+    def batch_mappings(self):
+        """Copy last batch lineage; ranges include the target-lookahead slot T.
+
+        Each range maps packed positions [start,end) to source document token
+        offsets. Positions >= input_length are lookahead or padding, not inputs.
+        Calling this method never advances the sampler.
+        """
+        import copy
+        return copy.deepcopy(self._batch_mappings)
+
+    def batch_context_exposure(self):
+        """Local last-batch context-transition counts, excluding padding/lookahead."""
+        keys = ('prefix_tokens_at_or_before_watermark', 'masked_prediction_targets')
+        return {key: sum(row.get('context_fork_exposure', {}).get(key, 0)
+                         for row in self._batch_mappings) for key in keys}
+
+    __next__ = next_batch
+
+    def __iter__(self):
+        return self
+
+    def state_dict(self):
+        import copy
+        state = {k: getattr(self, k) for k in ('packing_version', 'manifest_hash', 'split', 'batch_size', 'context', 'seed', 'epoch', 'cursor', 'document_cursor', 'token_cursor')}
+        if self._context_transition is not None:
+            state['context_transition'] = copy.deepcopy(self._context_transition)
+        return state
+
+    def load_state_dict(self, state):
+        for k in ('packing_version', 'manifest_hash', 'split', 'batch_size', 'context', 'seed'):
+            if state.get(k) != getattr(self, k):
+                raise ValueError(f'sampler state mismatch: {k}')
+        epoch, cursor = state['epoch'], state['cursor']
+        document_cursor, token_cursor = state['document_cursor'], state['token_cursor']
+        if any(type(value) is not int or value < 0 for value in (epoch, cursor, document_cursor, token_cursor)):
+            raise ValueError('invalid sampler cursor')
+        # Build/validate in locals: a rejected restore must leave the live stream
+        # unchanged, including cached last-batch mappings.
+        order = self._permutation(epoch)
+        rows, fill = self._count_lengths(self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order)
+        epoch_row_count = rows + bool(fill)
+        if cursor > epoch_row_count or document_cursor > len(order):
+            raise ValueError('invalid sampler cursor')
+        if document_cursor == len(order):
+            if token_cursor != 0 or cursor != epoch_row_count:
+                raise ValueError('inconsistent completed epoch cursor')
+        else:
+            doc = self.docs[order[document_cursor]]
+            length = doc['token_end'] - doc['token_start']
+            if token_cursor >= length or cursor == epoch_row_count:
+                raise ValueError('invalid document token cursor')
+            prefix_lengths = [self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order[:document_cursor]]
+            previous_rows, previous_fill = self._count_lengths(prefix_lengths)
+            at_document_start = token_cursor == 0 and previous_fill == 0 and previous_rows == cursor
+            if not at_document_start:
+                previous_rows, previous_fill = self._count_lengths((*prefix_lengths, token_cursor + 1))
+                if token_cursor >= length - 1 or previous_fill != 0 or previous_rows != cursor:
+                    raise ValueError('inconsistent row/document/token cursors')
+        import copy
+        transition = copy.deepcopy(state.get('context_transition'))
+        if transition is not None:
+            if not isinstance(transition, dict) or set(transition) != {'version', 'source_context', 'source_state'} or type(transition['version']) is not int or transition['version'] != 1:
+                raise ValueError('invalid context transition schema')
+            source = transition['source_state']
+            source_context = transition['source_context']
+            if (type(source_context) is not int or source_context <= 0 or not isinstance(source, dict)
+                    or type(source.get('context')) is not int or source.get('context') != source_context
+                    or set(source) != {'packing_version', 'manifest_hash', 'split', 'batch_size', 'context', 'seed', 'epoch', 'cursor', 'document_cursor', 'token_cursor'}):
+                raise ValueError('invalid context transition source')
+            checker = copy.copy(self)
+            checker.context = source_context
+            checker._context_transition = None
+            PackedSampler.load_state_dict(checker, source)
+            expected = self._fork_position(source)[:4]
+            if (epoch, cursor, document_cursor, token_cursor) != expected:
+                raise ValueError('context transition cursor mismatch')
+        self.epoch, self.order, self.epoch_row_count = epoch, order, epoch_row_count
+        self.cursor = cursor
+        self.document_cursor, self.token_cursor = document_cursor, token_cursor
+        self._context_transition = transition
+        self._batch_mappings = []
+
+
+
+class RankPackedSampler(PackedSampler):
+    """Rank slices of one deterministic global packed-row stream.
+
+    A call consumes ``world_size * batch_size`` rows globally, returning this
+    rank's contiguous slice. Every rank must call equally often. Only local rows
+    materialize token tensors; other rows advance packing metadata. Epochs may
+    repeat within a global batch for tiny corpora, exactly as in PackedSampler.
+    This partitions stream positions, not unique document identities.
+    """
+    def __init__(self, manifest, *, rank, world_size, split='train', batch_size=1,
+                 context=512, seed=0):
+        if (type(world_size) is not int or world_size < 1 or type(rank) is not int
+                or not 0 <= rank < world_size):
+            raise ValueError('invalid sampler rank/world_size')
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError('batch_size must be a positive integer')
+        self.rank, self.world_size = rank, world_size
+        super().__init__(manifest, split=split, batch_size=batch_size, context=context, seed=seed)
+
+    def _skip_rows(self, count):
+        for _ in range(count):
+            if self.cursor >= self.epoch_row_count:
+                self.epoch += 1
+                self.cursor = 0
+                self._order()
+            self._next_row()
+            self._context_transition = None
+            self.cursor += 1
+
+    def next_batch(self):
+        self._skip_rows(self.rank * self.batch_size)
+        batch = super().next_batch()
+        self._skip_rows((self.world_size - self.rank - 1) * self.batch_size)
+        return batch
+
+    __next__ = next_batch
+
+    def state_dict(self):
+        return {'rank_packing_version': 1, 'rank': self.rank, 'world_size': self.world_size,
+                'stream': super().state_dict()}
+
+    def load_state_dict(self, state):
+        for key, expected in (('rank_packing_version', 1), ('rank', self.rank),
+                              ('world_size', self.world_size)):
+            if type(state.get(key)) is not int or state[key] != expected:
+                raise ValueError(f'rank sampler state mismatch: {key}')
+        super().load_state_dict(state['stream'])
+
+
+def batch_hash(batch):
+    h = hashlib.sha256()
+    values = batch.values() if isinstance(batch, dict) else batch
+    for value in values:
+        value = value.detach().cpu().contiguous()
+        h.update(str((tuple(value.shape), str(value.dtype))).encode())
+        h.update(value.numpy().tobytes())
+    return h.hexdigest()
+
+
+def audit_validation_overlap(training_manifest, validation_manifest, document_ids=None):
+    """Audit exact full-document hash equality using metadata only.
+
+    Compare selected validation documents against train/calibration/final-test
+    metadata, independent of ID namespaces. Original and processed hashes are
+    compared separately. This does not detect partial/near duplicates or establish
+    general independence. Token payloads, targets, and raw text are never read.
+    """
+    hash_fields = ('content_sha256', 'processed_sha256')
+    compared_splits = ('train', 'calibration', 'test')
+    sample_limit = 10
+
+    def checked_metadata(path):
+        path = Path(path)
+        if path.is_dir():
+            path /= 'manifest.json'
+        digest = manifest_hash(path)
+        manifest = json.loads(path.read_text())
+        expected = manifest.get('artifacts', {}).get('documents.jsonl')
+        if not isinstance(expected, str) or len(expected) != 64:
+            raise ValueError('missing or invalid documents.jsonl checksum')
+        metadata_path = path.with_name('documents.jsonl')
+        if _sha(metadata_path) != expected:
+            raise ValueError('documents.jsonl artifact checksum mismatch')
+        return digest, metadata_path
+
+    def documents(path):
+        seen = set()
+        with path.open() as stream:
+            for line_number, line in enumerate(stream, 1):
+                try:
+                    doc = json.loads(line)
+                    doc_id = doc['id']
+                    if not isinstance(doc_id, str) or doc_id in seen:
+                        raise ValueError('non-string or duplicate document ID')
+                    if doc['split'] not in SPLIT_ORDER:
+                        raise ValueError('unknown document split')
+                    for field in hash_fields:
+                        value = doc[field]
+                        if not isinstance(value, str) or len(value) != 64 or any(c not in '0123456789abcdef' for c in value.lower()):
+                            raise ValueError(f'invalid {field}')
+                        doc[field] = value.lower()
+                    seen.add(doc_id)
+                except (KeyError, TypeError, ValueError) as error:
+                    raise ValueError(f'invalid document metadata at line {line_number}: {error}') from error
+                yield doc
+
+    training_hash, training_path = checked_metadata(training_manifest)
+    validation_hash, validation_path = checked_metadata(validation_manifest)
+    requested = None if document_ids is None else ({document_ids} if isinstance(document_ids, str) else {str(value) for value in document_ids})
+    index = {split: {field: {} for field in hash_fields} for split in compared_splits}
+    for doc in documents(training_path):
+        if doc['split'] in index:
+            for field in hash_fields:
+                index[doc['split']][field].setdefault(doc[field], doc['id'])
+    counts = dict.fromkeys(compared_splits, 0)
+    samples = {split: [] for split in compared_splits}
+    selected = set()
+    first_validation_id = {field: {} for field in hash_fields}
+    duplicate_hashes = {field: set() for field in hash_fields}
+    duplicate_ids = set()
+    duplicate_samples = []
+    for doc in documents(validation_path):
+        doc_id = doc['id']
+        if doc['split'] != 'val' or (requested is not None and doc_id not in requested):
+            continue
+        selected.add(doc_id)
+        for split in compared_splits:
+            matched = False
+            for field in hash_fields:
+                other_id = index[split][field].get(doc[field])
+                if other_id is not None:
+                    matched = True
+                    if len(samples[split]) < sample_limit:
+                        samples[split].append({'validation_document_id': doc_id,
+                                               'other_document_id': other_id,
+                                               'hash_kind': field, 'sha256': doc[field]})
+            counts[split] += int(matched)
+        for field in hash_fields:
+            previous = first_validation_id[field].setdefault(doc[field], doc_id)
+            if previous != doc_id:
+                duplicate_ids.update((previous, doc_id))
+                duplicate_hashes[field].add(doc[field])
+                if len(duplicate_samples) < sample_limit:
+                    duplicate_samples.append({'validation_document_id': doc_id,
+                                              'other_document_id': previous,
+                                              'hash_kind': field, 'sha256': doc[field]})
+    if requested is not None and requested - selected:
+        missing = sorted(requested - selected)
+        raise ValueError(f'unknown requested validation document IDs: {missing[:sample_limit]} (total {len(missing)})')
+    return {'training_manifest_hash': training_hash, 'validation_manifest_hash': validation_hash,
+            'selected_validation_documents': len(selected),
+            'selected_validation_ids_sha256': hashlib.sha256(json.dumps(sorted(selected), separators=(',', ':'), ensure_ascii=True).encode()).hexdigest(),
+            'overlap_counts': counts,
+            'overlap_samples': samples,
+            'duplicate_validation': {'documents_with_duplicate_content': len(duplicate_ids),
+                                     'hash_group_counts': {field: len(values) for field, values in duplicate_hashes.items()},
+                                     'samples': duplicate_samples},
+            'has_overlap': bool(any(counts.values()) or duplicate_ids),
+            'scope': 'exact whole-document original/processed SHA256 equality only; no near-duplicate or general-independence claim',
+            'sample_limit': sample_limit}
+
+
+# Backwards-compatible synthetic-task API; implementation lives in tasks.py.
+from .tasks import (MECHANISM_VERSION, _MECHANISM_KEYS, _MECHANISM_TASKS,
+                    _mechanism_bounds, _mechanism_partitions, _mechanism_row,
+                    load_mechanism_tasks, prepare_mechanism_tasks)

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# experiment outputs and caches (provenance lives in manifests + spend ledger, not git)
+runs/
+data/
+checkpoints/
+*.pt
+*.safetensors
+.hf_home/

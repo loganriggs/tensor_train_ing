@@ -1,0 +1,52 @@
+- name: J24x1024_lr0.00045_s101
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 101
+- name: J24x1024sc_lr0.00045_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+      depth_residual_base: 12
+    train:
+      lr: 0.00045
+      seed: 101
+- name: J24x1024_lr0.00135_s101
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 101
+- name: J24x1024sc_lr0.00135_s101
+  overrides:
+    model:
+      width_scaling_base: 512
+      depth_residual_base: 12
+    train:
+      lr: 0.00135
+      seed: 101
+- name: J24x1024_lr0.00045_s202
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 202
+- name: J24x1024sc_lr0.00045_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+      depth_residual_base: 12
+    train:
+      lr: 0.00045
+      seed: 202
+- name: J24x1024_lr0.00135_s202
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 202
+- name: J24x1024sc_lr0.00135_s202
+  overrides:
+    model:
+      width_scaling_base: 512
+      depth_residual_base: 12
+    train:
+      lr: 0.00135
+      seed: 202

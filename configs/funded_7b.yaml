@@ -1,0 +1,39 @@
+# funded_7b: 6.90B matrix params, parameter-matched polynomial preset (tnlm.shapes).
+# Memory plan (tnlm.shapes.min_gpus, checkpointing, 8192 tok/GPU): >= 2 x 80GB, ~73.3 GB/GPU.
+# Launch: torchrun --nproc-per-node <G> -m tnlm.cli train --distributed --config funded_7b.yaml ...
+# lr 4.5e-4 is the base LR at width 512. width_scaling_base: 512 scales hidden LR by (512/d)^0.5, which is supported by
+# the 512->1024 transfer sweep. depth_residual_base: 12 (branch x 12/L) is supported by the 12->24-layer sweep (docs/scaling.md). global_prediction_tokens_per_update and beta2 at this batch are NOT
+# transfer-validated: confirm with a short LR x batch check at the pilot scale before committing budget.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: true
+  spend_ledger: runs/funded_7b/spend.json
+  stage: D
+  gpu_hourly_rate_usd: REQUIRED_ACTUAL_RATE
+model:
+  layers: 32
+  d_model: 4096
+  heads: 32
+  d_key: 128
+  d_value: 128
+  d_mlp: 8320
+  activation_checkpointing: true
+  loss_chunk_tokens: 4096
+  width_scaling_base: 512
+  depth_residual_base: 12
+data:
+  manifest: REQUIRED_IMMUTABLE_MANIFEST
+  context: 4096
+  micro_batch_size: 2
+evaluation:
+  validation_manifest: REQUIRED_VALIDATION_MANIFEST
+  seed: 0
+train:
+  deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
+  optimizer: adamw
+  lr: 0.00045
+  global_prediction_tokens_per_update: 1048576
+  rung_total_tokens: REQUIRED
+  compile: true
+  seed: 101

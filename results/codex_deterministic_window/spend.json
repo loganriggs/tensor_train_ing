@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/off": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.0051347999120723515,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 43.81436284299707
+    },
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_a": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.00915152122523073,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 78.08835366397398
+    },
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_complete": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.005208763336782031,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 44.44548000098439
+    },
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_b": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.005149856798110476,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 43.942840657022316
+    },
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_prefix": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.004414969177022126,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 37.67217121896101
+    },
+    "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_resumed": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.004826894952052158,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/codex_deterministic_window/on_prefix/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 41.187062876007985
+    }
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "smoothing": "trailing 25-update token-weighted mean, partial windows at start",
+  "x": "cumulative scored prediction tokens / 1e6",
+  "raw_lines": "faint",
+  "figures": {
+    "scaling-width-training-loss": [
+      {
+        "path": "runs/lr_transfer/w512_lr0.00015/metrics.jsonl",
+        "sha256": "fdf90f91ccb07b1b6b19121c065cdbe3b537007cf7f76389437749e6e9437a12",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00045/metrics.jsonl",
+        "sha256": "f21035b945400aa8e8c934dafdd45c643eddb80b2b4976a296a20a58db88082e",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00135/metrics.jsonl",
+        "sha256": "c76d10361ef0f5a65f807f027ecb522a23c1b125af204a95db8b0f29c8c55932",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.004/metrics.jsonl",
+        "sha256": "b67659c8838274c00a0127cb914e31bd8644fb7043fdd1e97581a56269119885",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00015/metrics.jsonl",
+        "sha256": "aa40b59baf36c61b0332eff833c73e71d3eaccc32428ccb63caddf06fd27db73",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00045/metrics.jsonl",
+        "sha256": "6c387b07c9c7e57b71a7db50ceea82c0f82fc99bc3504d612111f05e98e1129c",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00135/metrics.jsonl",
+        "sha256": "e0cd95fa77d67b9d3efb3d897827bc89d20c61c14d22c7da25ebcd66b57dd4bd",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.004/metrics.jsonl",
+        "sha256": "b7db43444a404c32dd535588c45b05e601dae64e7d991df39b67daf6a4c98c00",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00015_wsb512/metrics.jsonl",
+        "sha256": "c8f6da67653dd26403505c5ceefb99cbaf5516d36f510328fc8889fb646150bf",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00045_wsb512/metrics.jsonl",
+        "sha256": "fbcd5971a47596f8e97b4bd989145eb522cb28c514da2d19347bb7c615e1e6fe",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.00135_wsb512/metrics.jsonl",
+        "sha256": "36ca19a1551bd1eb25e7f5608b7cff40b6e861438f4972da18f71d1b663107d9",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w1024_lr0.004_wsb512_retry/metrics.jsonl",
+        "sha256": "cd9def332b32677fdbde8ff345e0aa09d6d1bc14c3750f72e64eeed28af7fdd9",
+        "updates": 585,
+        "last_tokens": 4792320
+      }
+    ],
+    "scaling-depth-training-loss": [
+      {
+        "path": "runs/lr_transfer/w512_lr0.00015/metrics.jsonl",
+        "sha256": "fdf90f91ccb07b1b6b19121c065cdbe3b537007cf7f76389437749e6e9437a12",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00045/metrics.jsonl",
+        "sha256": "f21035b945400aa8e8c934dafdd45c643eddb80b2b4976a296a20a58db88082e",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00135/metrics.jsonl",
+        "sha256": "c76d10361ef0f5a65f807f027ecb522a23c1b125af204a95db8b0f29c8c55932",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00015/metrics.jsonl",
+        "sha256": "80c2b7f45a50c9d551cff4c6269272ae2199d0af8039377e882b376842f1b9cf",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00045/metrics.jsonl",
+        "sha256": "153d3f5221502928893f147eeaff377660edf3e7653b5a66a280d3cca2dd0a9f",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00135/metrics.jsonl",
+        "sha256": "e320292c2cec3c966d8d1f91f03686f8578967ee45534400b0141c5506584b30",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00015_drb12/metrics.jsonl",
+        "sha256": "d65a764adc79b61e7d2a94bba2c3dcfdc29937df4a969bcf49d17cc4a70cfd13",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00045_drb12/metrics.jsonl",
+        "sha256": "adde25711795c65dd46699b2bd2b45ba637f85bf1075d149b8ad62152ffda096",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/depth_transfer/L24_lr0.00135_drb12/metrics.jsonl",
+        "sha256": "c4fef584ab463b8827cc3f07074844813124529419daf5163106112bdf3d81ac",
+        "updates": 585,
+        "last_tokens": 4792320
+      }
+    ],
+    "scaling-joint-training-loss": [
+      {
+        "path": "runs/lr_transfer/w512_lr0.00015/metrics.jsonl",
+        "sha256": "fdf90f91ccb07b1b6b19121c065cdbe3b537007cf7f76389437749e6e9437a12",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00045/metrics.jsonl",
+        "sha256": "f21035b945400aa8e8c934dafdd45c643eddb80b2b4976a296a20a58db88082e",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/lr_transfer/w512_lr0.00135/metrics.jsonl",
+        "sha256": "c76d10361ef0f5a65f807f027ecb522a23c1b125af204a95db8b0f29c8c55932",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00015/metrics.jsonl",
+        "sha256": "c2471c5d84d24fa0cf2d6a68ac429cc9eb9bcf9bcdc5b2a361f66155548af1a1",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00045/metrics.jsonl",
+        "sha256": "b3c315d6fc9302f5373fcf6a014177174fc867354cf629711ecbc6682c931a5a",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00135/metrics.jsonl",
+        "sha256": "fc4cd358730a580ba30552af6ff9278a38216e60dd1416c29ee824fb807d37ce",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00015_scaled/metrics.jsonl",
+        "sha256": "e5f0c30089c5ee82c4d8657217b1bfe9f9a0fd8747de24a26322bd1a3ca4e609",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00045_scaled/metrics.jsonl",
+        "sha256": "a0dd592701886650282c29dcf2c6e00d7b6e4be3f82fb5ac2214e62adb063144",
+        "updates": 585,
+        "last_tokens": 4792320
+      },
+      {
+        "path": "runs/joint_transfer/J24x1024_lr0.00135_scaled/metrics.jsonl",
+        "sha256": "aa6e610fc60e7695ce6ac0e2367f85d073ce6878a55ce17aacc577fa326095c6",
+        "updates": 585,
+        "last_tokens": 4792320
+      }
+    ]
+  }
+}

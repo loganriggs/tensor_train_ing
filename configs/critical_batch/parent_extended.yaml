@@ -1,0 +1,72 @@
+# Critical batch size (scaling_review rec. 5): continue the uncooled 50M parent of confirmation w1024ws_lr0.00045_s101
+# (12x1024 width-scaled) for +50M tokens at batch 8K (control) / 32K / 128K tokens per update, LR x1/x2/x4.
+# Exported with `tnlm sweep-config`; only rung_total_tokens is extended (allowed upward promotion).
+data:
+  context: 512
+  manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  micro_batch_size: 16
+evaluation:
+  seed: 0
+  validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+model:
+  activation_checkpointing: false
+  attention: signed_product
+  attention_backend: auto
+  d_key: 64
+  d_mlp: 3392
+  d_model: 1024
+  d_value: 64
+  depth_lr_exponent: 0.5
+  depth_residual_base: null
+  depth_residual_exponent: 1.0
+  depth_scaling_base: null
+  dropout: 0.0
+  final_normalization: rms
+  fp32_scores: true
+  heads: 16
+  initialization: explicit_fan_in_with_depth_scaled_outputs
+  lagged_half_life_tokens: 1000000.0
+  layers: 12
+  loss_chunk_tokens: 4096
+  mlp: bilinear
+  norm_groups: 4
+  normalization: pre_rms
+  offset_square_b: 1.0
+  padded_vocab: 50304
+  position_encoding: rope
+  qk_norm: false
+  residual_alpha: 1.0
+  rms_eps: 1.0e-06
+  rope_base: 10000.0
+  tie_embeddings: false
+  vocab_size: 50257
+  width_logit_exponent: 0.5
+  width_lr_exponent: 0.5
+  width_scaling_base: 512
+project:
+  dry_run: false
+  gpu_hourly_rate_usd: 0.4219
+  milestone_tokens: []
+  reserve_usd: 150
+  spend_ledger: /workspace/tensor_train_ing/runs/confirmation/spend.json
+  stage: C
+  total_budget_usd: 1000
+train:
+  aux_adamw_lr: null
+  beta1: 0.9
+  beta2: 0.9872585449
+  bf16_compute: true
+  compile: true
+  cooldown_fraction: 0.1
+  fp32_norm_reductions: true
+  fp32_optimizer_state: true
+  global_prediction_tokens_per_update: 8192
+  grad_clip: 1.0
+  lr: 0.00045
+  muon_adjust_lr: match_rms_adamw
+  muon_momentum: 0.95
+  optimizer: adamw
+  rung_total_tokens: 100007936
+  schedule: constant_with_separate_cooldown
+  seed: 101
+  weight_decay_hidden: 0.1

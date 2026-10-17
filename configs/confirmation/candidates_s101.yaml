@@ -1,0 +1,48 @@
+- name: w512_lr0.00045_s101
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w1024_lr0.00045_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w1024ws_lr0.00045_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      width_scaling_base: 512
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w512_lr0.00135_s101
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 101
+- name: w1024_lr0.00135_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+    train:
+      lr: 0.00135
+      seed: 101
+- name: w1024ws_lr0.00135_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      width_scaling_base: 512
+    train:
+      lr: 0.00135
+      seed: 101

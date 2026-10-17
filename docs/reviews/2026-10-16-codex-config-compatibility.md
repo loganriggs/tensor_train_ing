@@ -1,0 +1,11 @@
+# Legacy checkpoint configuration compatibility
+
+The shared resume/evaluation validators now accept a missing ModelConfig or TrainConfig field only when the requested value equals its current dataclass default (including matching type). Recorded fields still compare strictly. Unknown saved fields, nondefault additions, raw data identity changes, altered evaluation training identity, ledger changes and invalid schedule/horizon changes still reject under the existing rules. Missing model/train sections reject. The existing absent-deterministic-means-false rule remains; requesting true cannot adopt an older false-policy trajectory.
+
+Normalization works on a copy. The original checkpoint config and files are unchanged. Validators return a `config_compatibility` record with the rule and dotted `defaulted_fields` mapping. The checkpoint loader attaches it to the returned in-memory payload. Analysis and evaluation include it under `training_descriptor.config_compatibility`, including the analysis invocation provenance. The training descriptor retains the original saved configuration rather than presenting inferred fields as recorded facts. Serial and distributed resumes record actual inferred defaults in `progress.config_compatibility_history` and carry that history into subsequent checkpoints.
+
+Read-only validation of `runs/lr_transfer/w512_lr0.00045/final/state.pt` succeeds with the four missing depth fields: `depth_scaling_base=null`, `depth_lr_exponent=0.5`, `depth_residual_base=null`, `depth_residual_exponent=1.0`. This check reconstructs the requested config from the saved settings plus current schema defaults; it does not launch the expensive trained-model analysis. Existing checkpoint tensor key/shape and checksum validation remains enforced by load_checkpoint.
+
+Regression coverage includes default-only acceptance, nondefault and unknown-field rejection, preservation of saved config, actual checkpoint loading and descriptor provenance, and analysis invocation integration with legacy config fields. No Claude-owned schema/model/analysis files, frozen confirmation files, or GPU jobs were changed/launched.
+
+Validation: **789 tests passed**, three warnings, exit0, full CPU suite with xdist8 and CUDA hidden, excluding kernel/parallel test files. Includes two-rank CPU replay and analysis invocation provenance.

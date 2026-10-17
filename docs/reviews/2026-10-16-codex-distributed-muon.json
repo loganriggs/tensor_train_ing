@@ -1,0 +1,44 @@
+{
+  "torch": "2.14.1+cu130",
+  "serial_weight_atol": 0.0004,
+  "serial_weight_rtol": 0,
+  "measurements": [
+    {
+      "shape": [
+        8,
+        4
+      ],
+      "dtensor_vs_serial_max_abs": 0.0001932382583618164,
+      "naive_local_vs_serial_max_abs": 0.0034366846084594727,
+      "naive_local_vs_dtensor_max_abs": 0.003442049026489258,
+      "momentum_vs_serial_max_abs": 0.0
+    },
+    {
+      "shape": [
+        4,
+        8
+      ],
+      "dtensor_vs_serial_max_abs": 0.00013244152069091797,
+      "naive_local_vs_serial_max_abs": 0.0030531883239746094,
+      "naive_local_vs_dtensor_max_abs": 0.003031134605407715,
+      "momentum_vs_serial_max_abs": 0.0
+    },
+    {
+      "shape": [
+        7,
+        5
+      ],
+      "dtensor_vs_serial_max_abs": 0.0002580881118774414,
+      "naive_local_vs_serial_max_abs": 0.006211757659912109,
+      "naive_local_vs_dtensor_max_abs": 0.0063149333000183105,
+      "momentum_vs_serial_max_abs": 0.0
+    }
+  ],
+  "source_sha256": {
+    "tnlm/optim.py": "98bdaddda1ed691043ca9074413a0d40570fe1212b0ed2cf63246126ae6883ea",
+    "tnlm/distributed_checkpoint.py": "98be222f02726c57b2d3fb7e9539cedfe9f63d0f666b113c8766e79aa8a2567e",
+    "tnlm/distributed_train.py": "1e63047024e29199d381f25b16a93ade211692f9bcfcfdfcf06964a1cea6c5bb",
+    "tests/dist_workers/muon_replay.py": "404b50baa64b5fb938512bc247544f8b3cb00f3acd536172849e3c1744b3b114",
+    "tests/dist_workers/muon_train_replay.py": "979452cca5bc0caf8214ac300f8d6082c0236af5f0dca51fc5c4af83da4de569"
+  }
+}

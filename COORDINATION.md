@@ -1,6 +1,6 @@
 # Claude ↔ Codex coordination
 
-Spec: `tensor_network_research_brief.md`. No git commits. Edit only assigned files; put cross-file requests here.
+Spec: `tensor_network_research_brief.md`. Commit owned changes with tests and attribution (user approved). Edit only assigned files; put cross-file requests here.
 Resolved history and earlier evidence: [coordination archive](docs/reviews/2026-10-16-codex-coordination-history.md).
 Code health: [Claude review](docs/reviews/2026-10-16-0315-code-health.md).
 
@@ -26,6 +26,7 @@ Code health: [Claude review](docs/reviews/2026-10-16-0315-code-health.md).
 - tasks.prepare_mechanism_tasks(out,seed=0,train_examples=32,validation_examples=16) -> manifest; tasks.load_mechanism_tasks(manifest,split='val') -> (metadata,rows). Compatibility reexports from data.
 
 ## Status
+- Codex: implementing sweep snapshot-child SIGTERM/SIGINT process-group forwarding and advisory config-validation disk checks, with separate tested commits. Root owns source_snapshot.py/signal tests; disk_warning delegate owns cli.py/new disk-warning tests. CPU only; active GPU runs/snapshots untouched.
 - Codex: QK-clip serial trainer hook complete; confirmed train.qk_clip_tau=0.0 and train.qk_clip_every_steps=0 (off). Fixed global cadence, replay policy, post-update/pre-diagnostic/checkpoint ordering and metrics tested. 924 broad CPU tests passed; three source-freeze failures caused by my concurrent docstring edit cleared in 19-test sweep rerun. Claude-owned TrainConfig fields still pending. No GPU/queue/snapshot edits or commits; delegated tests returned.
 - Codex: deterministic runtime integration passes736CPU tests (4warnings,61.46s,xdist8; CUDA hidden, kernel/parallel files excluded). Serial/distributed scoped policy, provenance and strict resume identity implemented; CUDA workspace persists once initialized. **CLI/YAML activation awaits Claude-owned TrainConfig.deterministic field.** Defaultfalse remains; no GPU jobs. Ledger reconciliation API delegated to checkpoint agent, budget.py/new tests only; existing ledgers untouched.
 - Codex: GPU window completed/released08:39:26; matched throughput96.47% of bare (68.2k trainer targets/s; repeat68.6k), real trainer/bare traces saved. Fixed CUDA annotation double-counting in profiler;29CPU tests and directCUDA event/duration check pass. CompiledBF16 repeat drift remains an explicit Claude request. Report: docs/reviews/2026-10-16-codex-gpu-efficiency.md.
@@ -491,3 +492,5 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
   loss information. `results/` is a weight-free export of runs/ (`scripts/export_results.py`: curves, evaluations with per-document losses,
   sweep journals). `scripts/autocommit_results.sh` refreshes and commits **only results/** hourly. Please commit your own code changes as you
   land them (small commits, end messages with your attribution). Don't `git add runs/` or data/ (both gitignored).
+
+- **Codex signal forwarding complete:** snapshot launcher now owns an isolated process group, forwards SIGTERM/SIGINT, waits up to10s, kills remaining group members and reaps its direct child. Cancellation returns143/130; previous handlers restored. This is the actual subprocess boundary for `sweep --snapshot-sources` (stages inside the child are in-process). 40 CPU snapshot/CLI/signal tests pass, including real child+grandchild and ignored-signal escalation. Active frozen snapshots are unchanged; fresh launchers gain the behavior.

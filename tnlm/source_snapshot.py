@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import signal
+import threading
+import time
 import sys
 
 
@@ -133,6 +136,54 @@ def verify_snapshot(snapshot):
     return manifest
 
 
+def _run_child(command, *, cwd, shutdown_seconds=10.0):
+    """Own the isolated child's process group until exit, forwarding cancellation."""
+    if threading.current_thread() is not threading.main_thread():
+        raise RuntimeError('snapshot subprocess supervision requires the main thread')
+    child = None
+    received = None
+    deadline = None
+
+    def send(signum):
+        if child is not None:
+            try:
+                os.killpg(child.pid, signum)
+            except ProcessLookupError:
+                pass
+
+    def cancel(signum, frame):
+        nonlocal received, deadline
+        if received is None:
+            received = signum
+            deadline = time.monotonic() + shutdown_seconds
+        send(signum)
+
+    previous = {s: signal.getsignal(s) for s in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        for s in previous:
+            signal.signal(s, cancel)
+        child = subprocess.Popen(command, cwd=cwd, start_new_session=True)
+        # A signal can arrive while Popen is still assigning the child handle.
+        if received is not None:
+            send(received)
+        while True:
+            try:
+                result = child.wait(timeout=0.1)
+                return 128 + received if received is not None else result
+            except subprocess.TimeoutExpired:
+                if deadline is not None and time.monotonic() >= deadline:
+                    send(signal.SIGKILL)
+                    child.wait()
+                    return 128 + received
+    finally:
+        # Also catch descendants that outlive a cooperative group leader.
+        if child is not None and (received is not None or child.poll() is None):
+            send(signal.SIGKILL)
+            child.wait()
+        for s, handler in previous.items():
+            signal.signal(s, handler)
+
+
 def run_snapshot(snapshot, args, *, workdir=None):
     manifest = verify_snapshot(snapshot)
     root = Path(snapshot).resolve()
@@ -172,8 +223,8 @@ def run_snapshot(snapshot, args, *, workdir=None):
     # takes precedence over editable installations. -B prevents cache writes.
     bootstrap = ('import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); '
                  'sys.argv[0]="tnlm"; runpy.run_module("tnlm.cli",run_name="__main__")')
-    return subprocess.run([sys.executable, '-I', '-B', '-c', bootstrap,
-                           str(root), *arguments], cwd=cwd, check=False).returncode
+    return _run_child([sys.executable, '-I', '-B', '-c', bootstrap,
+                       str(root), *arguments], cwd=cwd)
 
 
 def main():

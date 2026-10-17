@@ -357,7 +357,8 @@ be real; it needs the seed-202 fixed-WD run before it's reported as a finding.
 **Fixed-WD arm at LR 1.35e-3 (seed 101, live, 14:02):** flagged by the live watcher at step 500, with max |S1·S2| at 305k and loss 7.56. With rescaled WD
 on the same seed, step 500 had 2.0k and loss 5.86. Without the width rescaling of WD (i.e. 2× smaller hidden WD at 1B), this seed diverges early,
 whereas with rescaled WD it did not. That's preliminary evidence that **decoupled weight decay is part of what bounds the attention scores** in this
-polynomial model. It's consistent with WD acting on exactly the Q/K matrices whose growth QK-clip caps. Final CE pending.
+polynomial model. It's consistent with WD acting on exactly the Q/K matrices whose growth QK-clip caps. **Final CE 5.202** (vs 4.874 with rescaled
+WD on the same seed, +0.328; worse than even the default parameterization's 4.996). Score maxima ended at 7.3M.
 
 **High-LR update (seed 101, LR 1.35e-3):** 1B default 4.996, 1B scaled **4.874**. Scaling still wins (−0.122), but it **no longer
 reduces the 3×-LR penalty at 4× width**: +0.294 default vs **+0.310 scaled**. At 2× width the penalty was cut from +0.20 to +0.08.

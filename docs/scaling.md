@@ -350,6 +350,15 @@ same-config seed spread so far (0.050).
 4. Consequence for scaling up: the parameterization transfers the *optimum* but not the *stability margin*. That points to bounding the
    attention scores directly (QK-clip, now running on the diverging seed) and to the exponent fit (queued) for the LR rule itself.
 
+### QK-clip at 1B (τ=100 every 50 steps; `configs/qkclip1b/`, `runs/qkclip1b/comparisons/`)
+
+**Seed 202, LR 1.35e-3, the seed that diverged unclipped: 4.966.** It prevented the divergence: probe max |S1·S2| was held at exactly τ² = 1e4 at every
+log, versus 887k → 10M unclipped. Paired: **−0.690** vs unclipped [−0.701, −0.678]; −0.040 vs default; +0.106 vs fixed-WD scaled (which happened not
+to diverge on this seed); +0.401 vs the base-LR run. Early loss was worse (7.59 vs 6.35 at step 500, while the clip engaged), but the clipped run
+was ahead by step 1000 (6.32 vs 7.89).
+So QK-clip turns a divergence into an ordinary high-LR penalty, but it doesn't make 3× the base LR a *good* LR (+0.40 vs base). Pending: seed 101
+(where unclipped did not diverge: does the clip cost anything there?), base LR with clip, and the 2×-WD no-clip control.
+
 **Two-seed base-LR result (seed 202 scaled, 09:00): width scaling helps at 1B.** Scaled 1B: 4.564 / 4.565 (seeds 101/202, spread 0.001);
 default 1B: 4.702 / 4.652. Paired scaled − default: **−0.138 / −0.087** (mean −0.11). Both seeds agree in sign, and the scaled arm is far more
 seed-stable than the default (0.001 vs 0.050 spread). The size of the gain is uncertain (0.05 between seeds); its sign is not. The seed-101 default run also showed a mid-training

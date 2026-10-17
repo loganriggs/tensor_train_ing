@@ -86,3 +86,13 @@ def test_export_results_keeps_losses_drops_weights(tmp_path, monkeypatch):
     assert e["per_document"] == [[3.0, 1], [2.0, 1]] and "optimizer_exposure" not in e["checkpoint_progress"]
     assert json.loads((out / "_validation_docs/abc.json").read_text()) == ["d0", "d1"]
     assert not list(out.rglob("*.pt")) and not (out / "exp/cand.sources").exists()
+
+
+def test_run_queue_runs_in_order_and_stops_at_first_failure(tmp_path):
+    ok, bad, never = (tmp_path / f"{n}.sh" for n in ("ok", "bad", "never"))
+    for f, body in ((ok, "echo ran-ok"), (bad, "echo ran-bad; exit 3"), (never, "echo ran-never")):
+        f.write_text(f"#!/bin/bash\n{body}\n")
+    r = subprocess.run(["bash", str(ROOT / "scripts/run_queue.sh"), "0", str(ok), str(bad), str(never)], capture_output=True, text=True)
+    assert r.returncode == 3
+    assert r.stdout.index("ran-ok") < r.stdout.index("ran-bad") and "ran-never" not in r.stdout
+    assert "QUEUE_FAILED" in r.stdout and "QUEUE_DONE" not in r.stdout

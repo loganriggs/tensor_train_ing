@@ -15,3 +15,13 @@
     train:
       lr: 0.00045
       seed: 101
+# WD control (added 14:10): the fixed-WD arm (smaller effective hidden WD) diverged early at LR 1.35e-3 while rescaled WD did not on the same
+# seed. Does 2x hidden WD alone (no QK-clip) prevent the seed-202 divergence? Pairs with the seed-202 QK-clip run above.
+- name: w2048ws_wd0.2_noclip_lr0.00135_s202
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 202
+      weight_decay_hidden: 0.2
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0

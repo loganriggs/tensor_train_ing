@@ -30,6 +30,10 @@ data:
 evaluation:
   validation_manifest: REQUIRED_VALIDATION_MANIFEST
 train:
+  # QK-clip (tnlm.qk_clip; docs/scaling.md "QK-clip at 1B"): idle at the base LR (0 clips in 122 checks at 1B), rescues
+  # attention-score divergence at high LR (1B seed 202: 5.657 -> 4.966) and costs nothing when unneeded (-0.004).
+  qk_clip_tau: 100.0
+  qk_clip_every_steps: 50
   deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
   optimizer: adamw
   lr: 4.5e-4

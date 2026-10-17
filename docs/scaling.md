@@ -361,7 +361,12 @@ So QK-clip turns a divergence into an ordinary high-LR penalty, but it doesn't m
 **Seed 101, LR 1.35e-3, where the unclipped run did not diverge: 4.870**, vs 4.874 unclipped (paired **−0.004** [−0.006, −0.002]) and −0.126 vs
 default. **The clip costs nothing when it isn't needed** and rescues the run when it is. Two-seed high-LR scaled results: unclipped 4.874 / 5.657,
 clipped **4.870 / 4.966**. That makes QK-clip (τ=100) the recommended default for scaled-up runs: it is a weight rescaling, so the model stays
-exactly polynomial. Pending: base LR with clip (does it cost anything at the LR we'd actually use?) and the 2×-WD no-clip control.
+exactly polynomial.
+
+**Base LR 4.5e-4, seed 101: 4.562** vs 4.564 unclipped (paired −0.002 [−0.012, +0.018]). The clip **never engaged**: 0 clipped heads in 122
+checks, with probe max |S1·S2| peaking at ~1.7k, well under τ² = 1e4. It's idle insurance at the LR we'd use, and a rescue at LRs that diverge.
+**Adopted (23:30):** `qk_clip_tau: 100`, `qk_clip_every_steps: 50` in `configs/{confirm_500m,pilot_1b,pilot_3b,funded_7b,funded_32b}.yaml`.
+Pending: the 2×-WD no-clip control (does WD alone also prevent the seed-202 divergence?).
 
 **Two-seed base-LR result (seed 202 scaled, 09:00): width scaling helps at 1B.** Scaled 1B: 4.564 / 4.565 (seeds 101/202, spread 0.001);
 default 1B: 4.702 / 4.652. Paired scaled − default: **−0.138 / −0.087** (mean −0.11). Both seeds agree in sign, and the scaled arm is far more

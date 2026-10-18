@@ -491,3 +491,19 @@ Lagged arms were removed from the GPU norm screen. Candidate fixes to test with 
 (1) start attention near zero (ReZero-style small residual branch scales or small Q/K init), so scores grow only as learned;
 (2) QK-clip during calibration and from step 1; (3) attention-output normalization (one denominator per head; class N, but cheaper
 than per-site RMS); (4) a stronger TaperNorm anchor / longer taper window.
+
+**Root cause and first fix (06:45 Oct 18).** The outliers aren't only repeated-key coherence: switching the attention row scale to the visible-position
+average (`attn_row_power: 1`, new knob) didn't help (calibrated final mean_sq still ~10¹⁶; `pre_rms` unaffected: 6.752 vs 6.77). The
+underlying issue is **polynomial composition**: each block maps a token of scale s to ~s² (MLP) and ~s⁵ (attention), so across layers any token
+above typical scale explodes and any below vanishes. RMSNorm resets every token's scale at every layer; a shared divisor cannot.
+First trigger found in real text: a row with "!" after every word. **Small fixed residual scales fix it at init** (12×256, `lagged`, real data):
+
+| init | final-norm mean_sq | worst per-token max/median over sites |
+| --- | ---: | ---: |
+| default | 1.0·10¹⁵ | 1.1·10¹⁹ |
+| `attn_row_power: 1` | 2.3·10¹⁶ | 3.1·10²⁰ |
+| `residual_alpha: 0.3` | 1.29 | 4.1 |
+| `residual_alpha: 0.1` | 1.05 | 1.37 |
+
+With α ≤ 0.3 every token stays near the embedding scale, and higher layers act as small corrections. That's ReZero-style and still exactly
+polynomial (a constant per branch). Training-time canaries with α = 0.1 are running.

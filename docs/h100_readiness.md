@@ -82,3 +82,9 @@ sparse milestone list plus rolling recovery checkpoints.
 **Fix:** `configs/{pilot_1b,pilot_3b,funded_7b,funded_32b}.yaml` now set log-spaced `milestone_tokens` (1B, 2B, 4B, … 512B) and
 `keep_recovery_checkpoints: 2`. Permanent states: 5 / 6 / 8 / 10 milestones (+ initial, branch, final) for the four Chinchilla runs, i.e.
 ~8 states × 17 GB ≈ 140 GB for the 1.4B run instead of ~4.7 TB.
+
+### Data loader (resolved 05:40 Oct 18, Codex `0b65c6a`)
+Shared read-only mmap index (40 bytes/document, prebuilt at prep time) replaces per-rank metadata materialization. At 3B tokens: peak RSS
+**0.55 GB (was 11.6 GB)**, cached startup 9.8 s (was 65 s), identical batches/lineage/state, near-end seek+restore 0.06 s. Report:
+`docs/datasets/compact_sampler.md`. 30B / 8×H100 RSS is projected (~linear in documents: ~0.4 GB of index per 10B tokens, shared), measure on day 1.
+Scalable prep verified at 3B: 2.7M tokens/s, 5.9 GB peak RSS with 8 workers (`docs/datasets/parallel_preparation.md`), so 28B ≈ 3 h on 8 workers.

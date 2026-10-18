@@ -586,3 +586,22 @@ def test_attn_row_power_one_bounds_coherent_contexts():
     for T in (16, 256):  # one layer, same weights and input: only the last row's position factor differs
         assert abs(out[(1.0, T)] - out[(None, T)] * T ** -0.5) < 1e-9 * out[(None, T)]
     assert out[(None, 256)] > out[(None, 16)] and out[(1.0, 256)] < out[(1.0, 16)]  # grows with n vs not
+
+
+def test_spectral_linear_output_scaling_matches_effective_weight_exactly():
+    import torch
+    import torch.nn.functional as F
+    from tnlm.normalization import SpectralLinear
+    torch.manual_seed(0)
+    lin = SpectralLinear(24, 16, bias=True).double()
+    with torch.no_grad():
+        lin.weight.normal_(); lin.bias.normal_(); lin.reset_gamma(); lin.gamma.mul_(1.7)
+    x = torch.randn(3, 5, 24, dtype=torch.float64, requires_grad=True)
+    y = lin(x)
+    ref = F.linear(x, lin.effective_weight(), lin.bias)
+    torch.testing.assert_close(y, ref, rtol=1e-12, atol=1e-12)
+    g = torch.randn_like(y)
+    gw, gx = torch.autograd.grad(y, (lin.weight, x), g)
+    gw_r, gx_r = torch.autograd.grad(ref, (lin.weight, x), g)
+    torch.testing.assert_close(gw, gw_r, rtol=1e-10, atol=1e-12)
+    torch.testing.assert_close(gx, gx_r, rtol=1e-10, atol=1e-12)

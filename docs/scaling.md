@@ -604,3 +604,8 @@ width scaling + QK-clip couldn't do. Base-LR spectral run pending (~20:40), for 
 9.4k vs pre_rms 10.6k tok/s (**−11%**, the per-step power iteration). Summary for the recipe decision: equal loss at the recommended LR, a far larger LR
 safety margin (3× base costs 0.044 vs QK-clip's 0.40), 3.7× lower analysis distortion, and 11% slower. Recommendation: `spectral_rms`
 (interpretability + robustness), with the power iteration made sparser to recover throughput. Pending the user's decision; the config switch is prepared.
+
+**spectral_rms throughput fix (21:20):** a CPU profile put the overhead mostly in the forward/backward reparameterization (+16%), not the
+power iteration (2.7% of a step). `SpectralLinear.forward` now computes (γ/σ)·(W x) instead of materializing γW/σ each forward. Exact in FP64
+(test `test_spectral_linear_output_scaling_matches_effective_weight_exactly`). CPU proxy: 380 → 327 ms per fwd+bwd, overhead vs pre_rms ~21% → ~4%.
+The GPU effect is unmeasured: the 11% at 1B was measured before this change. Re-measure on the next GPU slot or the H100 day-1 canary.

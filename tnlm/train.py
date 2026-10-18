@@ -31,7 +31,7 @@ from .evaluate import compare_evaluations, evaluate_checkpoint, evaluate_mechani
 from .reporting import summarize_runs
 from .runtime import evaluation_validator, full_config, resume_validator, seed_all, training_execution, determinism_metadata
 from .model import TensorLM
-from .training_stability import stability_interval, qk_clip_policy, TrainingStabilityProbe
+from .training_stability import stability_interval, qk_clip_policy, qk_clip_source, BatchScoreBounds, TrainingStabilityProbe
 from .training_taper import TaperTraining, validate_taper_config
 from .normalization import lagged_modules, spectral_step
 
@@ -187,6 +187,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
     retention_policy = checkpoint_retention_policy(cfg)
     stability_every = stability_interval(cfg)
     clip_tau, clip_every = qk_clip_policy(cfg)
+    clip_source = qk_clip_source(cfg)
     if validate_taper_config(cfg):
         taper_total = schedule_steps(cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update)
         taper_warmup = validate_schedule(cfg.train.schedule, taper_total)
@@ -347,6 +348,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                                                        deadline=started + max_seconds)
         for norm in norms:
             _check_lagged_divisor(norm)
+        bound_recording = BatchScoreBounds(model, cfg)
         # Collection mutates buffers and must never be traced/recomputed.
         forward = torch.compile(model) if cfg.train.compile and not norms else model
         total_steps = schedule_steps(cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update)
@@ -385,7 +387,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
             save('initial')
         checkpoint_write_seconds = (3 * (time.monotonic() - write_start)
                                     if retention_policy['save_initial_checkpoint'] else 0.0)
-        stability_probe = TrainingStabilityProbe(cfg, dev) if stability_every or clip_tau > 0 else None
+        stability_probe = TrainingStabilityProbe(cfg, dev) if stability_every or (clip_tau > 0 and clip_source == 'probe') else None
         last_recovery_time = time.monotonic()
         rolling = deque()
         pending_milestones = list(pending_milestone_tokens(cfg, start_tokens=progress['tokens'],
@@ -416,6 +418,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
             step_start = time.monotonic()
             if _step_profiler is not None:
                 _step_profiler.start_step(local_step)
+            bound_recording.begin_update()
             taper.before_step(progress['steps'])
             schedule_step = progress.get('scheduler_step', progress['steps'])
             mult = (lr_multiplier(schedule_step, total_steps, cooldown_steps=cooldown_steps)
@@ -477,6 +480,8 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                     with region('tnlm.forward'), torch.autocast(dev.type, dtype=torch.bfloat16,
                                         enabled=cfg.train.bf16_compute and dev.type == 'cuda'):
                         _, loss, actual_n = forward(idx, doc_ids=docs, targets=targets, reduction='sum')
+                    if bound_recording.enabled:
+                        bound_recording.observe()
                     anchor = taper.anchor()
                     objective = loss if anchor is None else loss + taper.anchor_lambda * anchor * n
                     if anchor is not None:
@@ -494,6 +499,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                 valid_total += n
                 with region('tnlm.loss_accounting'):
                     loss_total += float(loss.detach())
+            score_bound_max = bound_recording.finish_update() if bound_recording.enabled else None
             with region('tnlm.optimizer'):
                 for param in model.parameters():
                     if param.grad is not None:
@@ -516,7 +522,8 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
             clipping = None
             if clip_tau > 0 and progress['steps'] % clip_every == 0:
                 with region('tnlm.qk_clip'):
-                    clipping = stability_probe.clip(model, clip_tau)
+                    clipping = (bound_recording.clip(clip_tau) if clip_source == 'batch_bound'
+                                else stability_probe.clip(model, clip_tau))
             stability = None
             if stability_every and progress['steps'] % stability_every == 0:
                 with region('tnlm.stability_probe'):
@@ -533,6 +540,8 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                       "run_elapsed_seconds": time.monotonic() - started,
                       "run_billed_usd": (time.monotonic() - started) * rate / 3600}
             record.update(taper.metrics(anchor_total / valid_total))
+            if score_bound_max is not None:
+                record['score_bound_max'] = score_bound_max
             if clipping is not None:
                 record['qk_clip'] = clipping
             if stability is not None:

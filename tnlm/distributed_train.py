@@ -27,6 +27,7 @@ from .checkpoint_plan import checkpoint_retention_policy, checkpoint_storage_pla
 from .checkpoint_storage import require_checkpoint_space
 from .optimizer_exposure import update_optimizer_exposure
 from .training_taper import TaperTraining, validate_taper_config
+from .training_stability import BatchScoreBounds, qk_clip_source
 from .budget import SpendLedger
 from .calibration import _check_lagged_divisor, calibrate_lagged
 from .config import Config
@@ -122,6 +123,7 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
             raise ValueError('history_limit must be positive')
         checkpoint_retention_policy(cfg)
         from .training_stability import stability_interval, qk_clip_policy
+        qk_clip_source(cfg)
         if qk_clip_policy(cfg)[0] > 0:
             raise ValueError('QK clipping currently supports serial training only')
         if stability_interval(cfg):
@@ -202,6 +204,7 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
         else:
             model = _phase('canonical component initialization', lambda: sharded_model_from_cpu_components(cfg.model, mesh, dev))
         _phase('analysis-state guard', lambda: _assert_no_analysis_state(model))
+        score_recording = _phase('score-bound recording setup', lambda: BatchScoreBounds(model, cfg))
         progress = {'steps': 0, 'tokens': 0, 'scheduler_step': 0, 'skipped_updates': [],
                     'initialization': CANONICAL_INITIALIZATION_VERSION if streamed_fresh else 'ordinary_cpu_tensorlm',
                     'context_history': [{'context': data.get('context', 512), 'start_tokens': 0, 'start_step': 0, 'source': 'fresh'}],
@@ -328,6 +331,8 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
             if taper.enabled:
                 _phase('Taper pre-step', lambda: taper.before_step(progress['steps']))
             local_anchor = 0.
+            if score_recording.enabled:
+                _phase('score-bound update reset', score_recording.begin_update)
             schedule_step = progress['scheduler_step']
             mult = (lr_multiplier(schedule_step, total_steps, cooldown_steps=cooldown_steps) if cooldown_steps is not None
                     else schedule_multiplier(schedule_step, total_steps, schedule=cfg.train.schedule, warmup_steps=progress['warmup_steps']))
@@ -384,6 +389,8 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                                             enabled=cfg.train.bf16_compute and dev.type == 'cuda'):
                             return model(idx, doc_ids=docs, targets=targets, reduction='sum')
                     _, loss, n = _phase('collective forward', forward)
+                    if score_recording.enabled:
+                        _phase('score-bound forward observation', score_recording.observe)
                     def check_loss():
                         if int(n) != selected or not bool(torch.isfinite(loss)):
                             raise FloatingPointError('invalid collective loss/count')
@@ -408,6 +415,10 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                         norm.set_valid_mask(None)
                 local_loss += float(loss.detach())
                 accumulated += sum(quotas)
+            score_bound_max = None
+            if score_recording.enabled:
+                local_bound = _phase('score-bound finite validation', score_recording.finish_update)
+                score_bound_max = max_value(local_bound)
             gradient_norm = _phase('global sharded clipping', lambda: torch.nn.utils.clip_grad_norm_(
                                     model.parameters(), cfg.train.grad_clip, error_if_nonfinite=True))
             _phase('optimizer update', lambda: optimizer.step())
@@ -444,6 +455,8 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                       'lr': optimizer.param_groups[0]['lr'],
                       'optimizer_group_lrs': [group['lr'] for group in optimizer.param_groups],
                       'optimizer_exposure': progress['optimizer_exposure'], 'rounds': rounds, 'seconds': seconds}
+            if score_bound_max is not None:
+                record['score_bound_max'] = score_bound_max
             record.update(taper.metrics(float(totals[3]) / accumulated))
             history.append(record)
             _phase('metrics append', lambda: _append_metric(run_dir, record) if rank == 0 else None)

@@ -20,9 +20,9 @@ def full_config(cfg):
         from .training_stability import stability_interval
         out['train']['stability_every_steps'] = stability_interval(cfg)
     if any(hasattr(cfg.train, name) for name in ('qk_clip_tau', 'qk_clip_every_steps')):
-        from .training_stability import qk_clip_policy
+        from .training_stability import qk_clip_policy, qk_clip_source
         tau, every = qk_clip_policy(cfg)
-        out['train'].update(qk_clip_tau=tau, qk_clip_every_steps=every)
+        out['train'].update(qk_clip_tau=tau, qk_clip_every_steps=every, qk_clip_source=qk_clip_source(cfg))
     return out
 
 
@@ -59,6 +59,7 @@ def _default_missing_config(saved, expected):
             defaults.setdefault('stability_every_steps', 0)
             defaults.setdefault('qk_clip_tau', 0.0)
             defaults.setdefault('qk_clip_every_steps', 0)
+            defaults.setdefault('qk_clip_source', 'probe')
         for name, default in defaults.items():
             if name not in values and name in expected.get(section, {}):
                 current = expected[section][name]

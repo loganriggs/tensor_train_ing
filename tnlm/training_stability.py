@@ -19,7 +19,17 @@ def stability_interval(cfg):
     return value
 
 
+def qk_clip_source(cfg):
+    source = getattr(cfg.train, 'qk_clip_source', 'probe')
+    if type(source) is not str or source not in ('probe', 'batch_bound'):
+        raise ValueError('train.qk_clip_source must be probe or batch_bound')
+    if source == 'batch_bound' and cfg.model.attention == 'softmax':
+        raise ValueError('batch_bound recording requires polynomial attention')
+    return source
+
+
 def qk_clip_policy(cfg):
+    qk_clip_source(cfg)
     tau = getattr(cfg.train, 'qk_clip_tau', 0.0)
     every = getattr(cfg.train, 'qk_clip_every_steps', 0)
     if type(tau) not in (int, float) or not math.isfinite(tau) or tau < 0:
@@ -42,6 +52,79 @@ def _finite_json(value, path, nonfinite):
             return None
         return float(value)
     return value
+
+
+class BatchScoreBounds:
+    """Record pre-update forward bounds; clip from the final original microbatch.
+
+    The metric spans every executed microbatch, layer and factor. It includes
+    padding and unscored forward positions and is not a post-update score cap.
+    Detached snapshots prevent backward recomputation from changing the source.
+    """
+    def __init__(self, model, cfg):
+        from .qk_clip import set_score_bound_recording
+        self.model = model
+        self.enabled = qk_clip_source(cfg) == 'batch_bound'
+        self.maximum = None
+        self.last = None
+        if self.enabled:
+            set_score_bound_recording(model, True)
+
+    def begin_update(self):
+        self.maximum = self.last = None
+
+    def observe(self):
+        if not self.enabled:
+            return
+        from .qk_clip import score_bounds
+        snapshot = score_bounds(self.model)
+        entries = []
+        for layer, (block, bounds) in enumerate(zip(self.model.blocks, snapshot)):
+            expected = {'S1', 'S2'} if hasattr(block.attn, 'q2') else {'S1'}
+            if set(bounds) != expected:
+                raise ValueError('missing or invalid polynomial score bounds')
+            for name, bound in bounds.items():
+                if not torch.is_tensor(bound) or bound.shape != (self.model.cfg.heads,):
+                    raise ValueError('invalid score bound shape')
+                entries.append((layer, name, bound.detach()))
+        if not entries:
+            raise ValueError('no polynomial score bounds were recorded')
+        # One compact copy protects against reused compiled output buffers and
+        # allows one reduction instead of launching kernels for every factor.
+        values = torch.cat([bound for _, _, bound in entries])
+        maximum = values.amax()
+        maximum = torch.where((values < 0).any(), maximum.new_full((), float('nan')), maximum)
+        self.maximum = maximum if self.maximum is None else torch.maximum(self.maximum, maximum)
+        self.last = [{} for _ in snapshot]
+        heads = self.model.cfg.heads
+        for offset, (layer, name, _) in enumerate(entries):
+            self.last[layer][name] = values[offset * heads:(offset + 1) * heads]
+
+    def finish_update(self):
+        if not self.enabled:
+            return 0.0
+        if self.maximum is None:
+            raise ValueError('no score bounds recorded for this update')
+        maximum = float(self.maximum)
+        if not math.isfinite(maximum) or maximum < 0:
+            raise FloatingPointError('nonfinite or negative score bound; update aborted')
+        return maximum
+
+    def clip(self, tau):
+        from .qk_clip import qk_clip_from_bounds_
+        self.finish_update()
+        if self.last is None:
+            raise ValueError('no last-microbatch score bounds for clipping')
+        for block, bounds in zip(self.model.blocks, self.last):
+            block.attn.last_score_bound = bounds
+        started = time.monotonic()
+        stats = qk_clip_from_bounds_(self.model, tau)
+        nonfinite = []
+        _finite_json(stats, 'qk_clip', nonfinite)
+        if nonfinite:
+            raise FloatingPointError('nonfinite QK clipping result: ' + ', '.join(nonfinite))
+        return {**stats, 'seconds': time.monotonic() - started,
+                'optimizer_state_policy': 'moments and step counters unchanged'}
 
 
 class TrainingStabilityProbe:
@@ -68,18 +151,24 @@ class TrainingStabilityProbe:
         started = time.monotonic()
         modes = [(module, module.training) for module in model.modules()]
         norms = [(module, module.collecting, module._valid) for module in lagged_modules(model) + taper_modules(model)]
+        bounds = [(block.attn, block.attn.record_score_bound, block.attn.last_score_bound)
+                  for block in model.blocks]
         python_rng, numpy_rng = random.getstate(), np.random.get_state()
         devices = ([self.device.index if self.device.index is not None else torch.cuda.current_device()]
                    if self.device.type == 'cuda' else [])
         try:
             with torch.random.fork_rng(devices=devices), torch.no_grad():
                 model.eval()
+                for attention, _, _ in bounds:
+                    attention.record_score_bound = False
                 for module, _, _ in norms:
                     module.collecting = False
                 stats = operation(model, self.idx, self.doc)
                 if self.device.type == 'cuda':
                     torch.cuda.synchronize(self.device)
         finally:
+            for attention, recording, last in bounds:
+                attention.record_score_bound, attention.last_score_bound = recording, last
             for module, training in modes:
                 module.training = training
             for module, collecting, valid in norms:

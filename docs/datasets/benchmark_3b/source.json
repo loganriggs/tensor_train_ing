@@ -1,0 +1,66 @@
+{
+  "dataset": "HuggingFaceFW/fineweb",
+  "revision": "9bb295ddab0e05d785b879661af7260fed5140fc",
+  "shards": [
+    {
+      "bytes": 1330477969,
+      "crawl": "CC-MAIN-2019-09",
+      "parquet_rows": 651086,
+      "path": "data/CC-MAIN-2019-09/004_00049.parquet",
+      "sha256": "beea79c4e9220a0cafe920ef6e78538c682df3b8afe336c761a51849646d9adf",
+      "verified_local_sha256": "beea79c4e9220a0cafe920ef6e78538c682df3b8afe336c761a51849646d9adf",
+      "local": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m_raw/data/CC-MAIN-2019-09/004_00049.parquet"
+    },
+    {
+      "bytes": 1237515318,
+      "crawl": "CC-MAIN-2021-10",
+      "parquet_rows": 587627,
+      "path": "data/CC-MAIN-2021-10/004_00048.parquet",
+      "sha256": "c95da269a7a10a713663b8b784030ff74dde1440b05345ef944a048eafade63d",
+      "verified_local_sha256": "c95da269a7a10a713663b8b784030ff74dde1440b05345ef944a048eafade63d",
+      "local": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m_raw/data/CC-MAIN-2021-10/004_00048.parquet"
+    },
+    {
+      "bytes": 304036692,
+      "crawl": "CC-MAIN-2022-05",
+      "parquet_rows": 140933,
+      "path": "data/CC-MAIN-2022-05/005_00046.parquet",
+      "sha256": "ed94dedbbd3494f6eb1681888490d1cc9b5e6e03bf35ab89ca9058bfd278b110",
+      "verified_local_sha256": "ed94dedbbd3494f6eb1681888490d1cc9b5e6e03bf35ab89ca9058bfd278b110",
+      "local": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m_raw/data/CC-MAIN-2022-05/005_00046.parquet"
+    },
+    {
+      "bytes": 280174535,
+      "crawl": "CC-MAIN-2023-06",
+      "parquet_rows": 127684,
+      "path": "data/CC-MAIN-2023-06/006_00046.parquet",
+      "sha256": "12c5764162861efa922c5e9df408ca5aaf747079abb35856e5ff07269efcd794",
+      "verified_local_sha256": "12c5764162861efa922c5e9df408ca5aaf747079abb35856e5ff07269efcd794",
+      "local": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m_raw/data/CC-MAIN-2023-06/006_00046.parquet"
+    },
+    {
+      "path": "data/CC-MAIN-2019-09/000_00000.parquet",
+      "bytes": 2148187944,
+      "sha256": "14956d291201dc37c48277d10c45be0268a193943822bbffe9f4a537b38c5b43",
+      "local": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2019-09/000_00000.parquet",
+      "parquet_rows": 1061882,
+      "declared_source_tokens": 729158257
+    },
+    {
+      "path": "data/CC-MAIN-2019-09/000_00001.parquet",
+      "bytes": 2147130513,
+      "sha256": "4b08ee824b64c2913f6c9a7b2cbef3e37b6bdec3924e334c3cf2828edaa348b8",
+      "local": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2019-09/000_00001.parquet",
+      "parquet_rows": 1058849,
+      "declared_source_tokens": 728981702
+    },
+    {
+      "path": "data/CC-MAIN-2021-10/000_00000.parquet",
+      "bytes": 2148944184,
+      "sha256": "0dd93265d8ebe326dd2a72e4c9563580c80e3843d6ae8e6ecf85bae696c4aea0",
+      "local": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2021-10/000_00000.parquet",
+      "parquet_rows": 1030912,
+      "declared_source_tokens": 733605374
+    }
+  ]
+}

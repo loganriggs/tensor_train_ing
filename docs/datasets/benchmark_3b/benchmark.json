@@ -1,0 +1,87 @@
+{
+  "accepted": true,
+  "command": [
+    "/venv/main/bin/python",
+    "-m",
+    "tnlm.cli",
+    "prepare_data",
+    "--hf-dataset",
+    "HuggingFaceFW/fineweb",
+    "--revision",
+    "9bb295ddab0e05d785b879661af7260fed5140fc",
+    "--hf-data-files",
+    "data/CC-MAIN-2019-09/004_00049.parquet",
+    "data/CC-MAIN-2021-10/004_00048.parquet",
+    "data/CC-MAIN-2022-05/005_00046.parquet",
+    "data/CC-MAIN-2023-06/006_00046.parquet",
+    "data/CC-MAIN-2019-09/000_00000.parquet",
+    "data/CC-MAIN-2019-09/000_00001.parquet",
+    "data/CC-MAIN-2021-10/000_00000.parquet",
+    "--hf-shard-checksums",
+    "/workspace/tensor_train_ing/runs/codex_data_3b/heldout-benchmark.controls/checksums.json",
+    "--hf-local-shards",
+    "/workspace/tensor_train_ing/runs/codex_data_3b/heldout-benchmark.controls/local.json",
+    "--out",
+    "data/fineweb_3b_heldout",
+    "--workers",
+    "8",
+    "--max-tokens",
+    "3100000000",
+    "--max-documents",
+    "10000000",
+    "--exclude-validation-manifest",
+    "data/fineweb_confirmation_320m/manifest.json"
+  ],
+  "cpu_affinity_count": 24,
+  "documents": 4415220,
+  "elapsed_seconds": 1140.7090235420037,
+  "heldout_audit": {
+    "examples": [],
+    "heldout_manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5",
+    "overlaps": {
+      "calibration": 0,
+      "test": 0,
+      "train": 0
+    },
+    "scope": "all existing validation IDs and exact raw/processed full-document hashes; not near-duplicate detection",
+    "validation_documents": 4496
+  },
+  "implementation_sha256": {
+    "scripts/benchmark_prepare_data.py": "c22d396a71a3fc66a782a2c8806fcd13dc6135825a9ee245cd429f76ad577aa1",
+    "tnlm/cli.py": "a06b670795968862e4b33fed7484e454ed0a4729130e112989a7fea994dc7e67",
+    "tnlm/data.py": "cf2dcdaef4fba6c665577e1dbb7feb62de0fe0363a6a1476b57d20f204bc06d6",
+    "tnlm/data_preparation.py": "f688ce8daf3198861400758af2dc2154a1057e5812ec37a1f853cc6261511586"
+  },
+  "manifest": "/workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json",
+  "manifest_sha256": "390b37a6c2fd0e3c51e028ef0d3719f91b690c3b72c4cbd220ed5f100e886543",
+  "packages": {
+    "numpy": "2.5.4",
+    "psutil": "7.2.2",
+    "pyarrow": "26.0.0",
+    "tiktoken": "0.14.0",
+    "torch": "2.14.1"
+  },
+  "peak_parent_rss_bytes": 2947469312,
+  "peak_process_count": 10,
+  "peak_process_tree_rss_bytes": 5883887616,
+  "python": "3.12.14",
+  "returncode": 0,
+  "rss_samples": 11065,
+  "rss_scope": "sum of parent and descendant RSS sampled every0.1s; shared pages counted per process; short peaks may be missed",
+  "source_spec_sha256": "a910ab457b2a2f2e3eac1a2d15e110cd1330699c1d9cb85a73b0162cb7a2d90b",
+  "thread_environment": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "throughput_scope": "whole preparation including local raw hashing, selection, tokenization, artifact hashing/fsync; excludes acquisition and post-run audit",
+  "tokens": {
+    "calibration": 31218051,
+    "test": 31149287,
+    "train": 3009867881,
+    "val": 27764781
+  },
+  "tokens_per_second": 2717608.0280089504,
+  "train_tokens_per_second": 2638593.908597383,
+  "workers": 8
+}

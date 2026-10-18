@@ -1,0 +1,23 @@
+{
+  "elapsed_seconds": 59.147707921103574,
+  "peak_rss_bytes": 11617816576,
+  "batch_sha256": "a85c0a47b5470279ba30a426c1b33caaa83e84fb3fc4b99db9e01f568ec8b8cc",
+  "batch_shapes": [
+    [
+      16,
+      512
+    ],
+    [
+      16,
+      512
+    ],
+    [
+      16,
+      512
+    ]
+  ],
+  "token_offset_above_int32_checked": 2147483648,
+  "training_documents": 4287242,
+  "scope": "separate downstream PackedSampler smoke; not included in preparation throughput or RSS; batch_slots counts tensor positions, not scored targets",
+  "batch_slots": 8192
+}

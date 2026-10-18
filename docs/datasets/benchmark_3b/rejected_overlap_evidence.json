@@ -1,0 +1,140 @@
+[
+  {
+    "training_document": {
+      "content_sha256": "a3ab76113bc734c7beb604d92753ed17187625c1b8ee3263791016e26c5d34ff",
+      "id": "<urn:uuid:e6bbb787-b353-40c4-8a6b-4b3501ecb19f>",
+      "numeric_id": 4413920,
+      "processed_sha256": "a3ab76113bc734c7beb604d92753ed17187625c1b8ee3263791016e26c5d34ff",
+      "processed_token_end": 577,
+      "processed_token_start": 0,
+      "selection_sha256": "f28f2d9665edfd1964b2a9659fdc24399403d473ee88defa2bea3f6b07e0899c",
+      "source_offset": {
+        "row": 401032,
+        "shard": "data/CC-MAIN-2019-09/004_00049.parquet"
+      },
+      "source_token_end": 578,
+      "source_token_start": 0,
+      "split": "train",
+      "synthetic_eos_token_offset": 577,
+      "token_end": 3005964430,
+      "token_start": 3005963852,
+      "truncated": false
+    },
+    "validation_document": {
+      "content_sha256": "a3ab76113bc734c7beb604d92753ed17187625c1b8ee3263791016e26c5d34ff",
+      "id": "<urn:uuid:6b41f651-97a2-4b95-aa7f-672f0bc9959d>",
+      "numeric_id": 79838,
+      "processed_sha256": "a3ab76113bc734c7beb604d92753ed17187625c1b8ee3263791016e26c5d34ff",
+      "processed_token_end": 577,
+      "processed_token_start": 0,
+      "selection_sha256": "0d838d8d23437f4c59fd2f0a38e6e11cac880c70e79b8e59db07e44f29be25ad",
+      "source_offset": {
+        "row": 62306,
+        "shard": "data/CC-MAIN-2023-06/006_00046.parquet"
+      },
+      "source_token_end": 578,
+      "source_token_start": 0,
+      "split": "val",
+      "synthetic_eos_token_offset": 577,
+      "token_end": 548468,
+      "token_start": 547890,
+      "truncated": false
+    },
+    "matches": [
+      "content_sha256",
+      "processed_sha256"
+    ]
+  },
+  {
+    "training_document": {
+      "content_sha256": "bb664d875a8fc02b991de37a27a9029871834c72db81f224dcc0f009b4c62c72",
+      "id": "<urn:uuid:39bebeb0-6abf-4665-aa13-7cba80f7ceb1>",
+      "numeric_id": 3402544,
+      "processed_sha256": "bb664d875a8fc02b991de37a27a9029871834c72db81f224dcc0f009b4c62c72",
+      "processed_token_end": 659,
+      "processed_token_start": 0,
+      "selection_sha256": "baf9a644aabc56dde1e63218cd261f57ee6bdb74c26a7764106d5e3646f8954c",
+      "source_offset": {
+        "row": 365789,
+        "shard": "data/CC-MAIN-2021-10/000_00000.parquet"
+      },
+      "source_token_end": 660,
+      "source_token_start": 0,
+      "split": "train",
+      "synthetic_eos_token_offset": 659,
+      "token_end": 2317418287,
+      "token_start": 2317417627,
+      "truncated": false
+    },
+    "validation_document": {
+      "content_sha256": "bb664d875a8fc02b991de37a27a9029871834c72db81f224dcc0f009b4c62c72",
+      "id": "<urn:uuid:fb55399b-2dac-47bd-9d9c-9aa820ecfab8>",
+      "numeric_id": 148171,
+      "processed_sha256": "bb664d875a8fc02b991de37a27a9029871834c72db81f224dcc0f009b4c62c72",
+      "processed_token_end": 659,
+      "processed_token_start": 0,
+      "selection_sha256": "19211b66b668a60719667e9e66398322ba3ea32bde058a096763dadfdc45761d",
+      "source_offset": {
+        "row": 371486,
+        "shard": "data/CC-MAIN-2019-09/004_00049.parquet"
+      },
+      "source_token_end": 660,
+      "source_token_start": 0,
+      "split": "val",
+      "synthetic_eos_token_offset": 659,
+      "token_end": 992810,
+      "token_start": 992150,
+      "truncated": false
+    },
+    "matches": [
+      "content_sha256",
+      "processed_sha256"
+    ]
+  },
+  {
+    "training_document": {
+      "content_sha256": "12ed9f71696f27edb770ecd7cbf8d5a45fa29b0d555699db038c6d3fe1bfa1c3",
+      "id": "<urn:uuid:34b9af16-8475-41ae-9ae6-4655c80b7fa7>",
+      "numeric_id": 3244891,
+      "processed_sha256": "12ed9f71696f27edb770ecd7cbf8d5a45fa29b0d555699db038c6d3fe1bfa1c3",
+      "processed_token_end": 215,
+      "processed_token_start": 0,
+      "selection_sha256": "b252b29e8b77a7a1d8c976720f5b9e1f872e9457b2801ba793f453e2102811be",
+      "source_offset": {
+        "row": 71199,
+        "shard": "data/CC-MAIN-2023-06/006_00046.parquet"
+      },
+      "source_token_end": 216,
+      "source_token_start": 0,
+      "split": "train",
+      "synthetic_eos_token_offset": 215,
+      "token_end": 2209828743,
+      "token_start": 2209828527,
+      "truncated": false
+    },
+    "validation_document": {
+      "content_sha256": "12ed9f71696f27edb770ecd7cbf8d5a45fa29b0d555699db038c6d3fe1bfa1c3",
+      "id": "<urn:uuid:5033eb7d-99b0-4158-8203-6fd9ab74bb48>",
+      "numeric_id": 218149,
+      "processed_sha256": "12ed9f71696f27edb770ecd7cbf8d5a45fa29b0d555699db038c6d3fe1bfa1c3",
+      "processed_token_end": 215,
+      "processed_token_start": 0,
+      "selection_sha256": "24f75382126b2c07ca57d7e0690448c605a401c60bfab380081650c6f4aadd85",
+      "source_offset": {
+        "row": 31972,
+        "shard": "data/CC-MAIN-2022-05/005_00046.parquet"
+      },
+      "source_token_end": 216,
+      "source_token_start": 0,
+      "split": "val",
+      "synthetic_eos_token_offset": 215,
+      "token_end": 1503509,
+      "token_start": 1503293,
+      "truncated": false
+    },
+    "matches": [
+      "content_sha256",
+      "processed_sha256"
+    ]
+  }
+]

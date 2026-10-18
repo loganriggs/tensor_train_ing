@@ -61,3 +61,56 @@ any remaining overlap.
 The downstream `PackedSampler` still loads document metadata into memory. The
 preparation memory bounds do not establish training-loader memory bounds for a
 30B-token corpus, nor do they validate multi-GPU training.
+
+## Measured 3B verification (2026-10-18)
+
+Implementation commit: `fa8c817`. Accepted manifest:
+`data/fineweb_3b_heldout/manifest.json`, SHA256
+`390b37a6c2fd0e3c51e028ef0d3719f91b690c3b72c4cbd220ed5f100e886543`.
+Keep `data/fineweb_confirmation_320m/manifest.json` as the validation manifest.
+
+| Measurement | Result |
+| --- | ---: |
+| Total output tokens | 3,100,000,000 |
+| Training tokens | 3,009,867,881 |
+| Output documents | 4,415,220 |
+| Whole preparation elapsed | 1,140.71 s (19.01 min) |
+| Whole preparation throughput | 2,717,608 tokens/s |
+| Training-token throughput | 2,638,594 tokens/s |
+| Sampled peak aggregate process RSS | 5,883,887,616 bytes (5.88 GB) |
+| Sampled peak parent RSS | 2,947,469,312 bytes (2.95 GB) |
+| Tokenizer workers | 8 |
+| Fixed validation documents audited | 4,496 (includes the 1,476 evaluation documents) |
+| Heldout matches in train/calibration/test | 0 / 0 / 0 |
+
+Hardware: AMD Ryzen 9 5900X, 24 logical CPUs available. Existing GPU training
+continued; no GPU was used for preparation. The 986-test CPU gate overlapped the
+early source scan, so these are observed shared-node results, not an isolated
+maximum-throughput claim. Downloads and the post-preparation audit are excluded
+from elapsed time; source hashing, selection, tokenization and durable artifact
+publication are included. Peak RSS is a 0.1-second sampled sum, with shared pages
+counted once per process.
+
+The initial unfiltered run found three cross-ID exact-content validation matches
+in training and was rejected and deleted. The accepted rerun excluded 4,500
+source identities (the 4,496 reference documents plus four content aliases in the
+full declared source) before canonical selection. The independent final audit
+checked all 4,496 validation documents, not just the 1,476 evaluation subset.
+This is exact ID/raw/normalized-content exclusion, not near-duplicate detection.
+
+The production sampler successfully loaded the accepted data, constructed a
+16×512 batch and read token offsets above 2^31. Its separate peak RSS was
+11.62 GB and startup plus first batch took 59.15 seconds. **This exposes a
+remaining H100 readiness issue:** the current sampler materializes document
+metadata per process. A 30B corpus and multiple ranks require separate loader
+memory work/measurement; the 5.88 GB preparation result does not cover training.
+
+Evidence: [benchmark](benchmark_3b/benchmark.json),
+[source specification](benchmark_3b/source.json),
+[manifest](benchmark_3b/manifest.json),
+[rejected overlap examples](benchmark_3b/rejected_overlap_evidence.json),
+[sampler smoke](benchmark_3b/sampler_smoke.json). The benchmark records exact
+implementation hashes, package versions and thread settings. Serial/parallel
+byte identity is covered by fixtures and a legacy implementation oracle; the
+large accepted corpus was prepared with eight workers. No 30B throughput claim
+is made from this 3B measurement.

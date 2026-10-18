@@ -1,0 +1,88 @@
+{
+  "artifacts": {
+    "calibration.tokens.bin": "e13b937ce8f0799460b1b6d437ec19475bdc1d2660cce34c958bc7932b48edea",
+    "documents.jsonl": "ec08f6aa46b8ffdd2581b4f6f60ccd1f6ed740e69dab94e049e947f775c6805c",
+    "test.tokens.bin": "acba29e66ea7707ff4a43a547aee08144846fd07cfc9e36d1f18bc7d35f0ce66",
+    "train.tokens.bin": "f3edc15b51085212d6e6372f1b4736b31adfd84aa66aebc9fdf5796431e1c8f4",
+    "val.tokens.bin": "550e49fb52fab0430a94202656456b58c0623160f72b10765b3ba0ffb6c89027"
+  },
+  "boundary_loss_policy": "ignore cross-document transitions and padding",
+  "bounded_selection": "smallest domain-separated selection SHA256 ranks across entire declared source; canonical rank order then token cap",
+  "deduplication": "identical stable-ID/content duplicates collapse; conflicting contents rejected",
+  "documents": 4415220,
+  "format_version": 1,
+  "hash_domains": {
+    "selection": "UTF8(selection + NUL + stable document ID)",
+    "split": "UTF8(stable document ID)"
+  },
+  "heldout_exclusion": {
+    "documents_sha256": "4cf3a5f77a7a78f2bce5f3fc8d265d82971f7a2067afa8e934fba4f633614a9b",
+    "excluded_unique_documents": 4500,
+    "manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5",
+    "rule": "exclude every source document matching a fixed validation ID, raw content SHA256, or CRLF/CR-to-LF processed content SHA256, before selection and from all output splits",
+    "validation_documents": 4496
+  },
+  "max_documents": 10000000,
+  "max_tokens": 3100000000,
+  "membership": "SHA256(UTF8(stable document ID)), fixed fraction intervals",
+  "preparation_cost": "full declared source scan and HF raw-shard download/hash; output token/document bounds do not bound scan cost",
+  "preprocessing": "CRLF/CR to LF; otherwise unchanged",
+  "scan_records": 4658973,
+  "scan_unique_documents": 4658973,
+  "source": {
+    "config": null,
+    "dataset": "HuggingFaceFW/fineweb",
+    "kind": "huggingface",
+    "revision": "9bb295ddab0e05d785b879661af7260fed5140fc",
+    "shard_hash_verification": "SHA256 of every local raw shard verified before parquet reading",
+    "shard_sha256": {
+      "data/CC-MAIN-2019-09/000_00000.parquet": "14956d291201dc37c48277d10c45be0268a193943822bbffe9f4a537b38c5b43",
+      "data/CC-MAIN-2019-09/000_00001.parquet": "4b08ee824b64c2913f6c9a7b2cbef3e37b6bdec3924e334c3cf2828edaa348b8",
+      "data/CC-MAIN-2019-09/004_00049.parquet": "beea79c4e9220a0cafe920ef6e78538c682df3b8afe336c761a51849646d9adf",
+      "data/CC-MAIN-2021-10/000_00000.parquet": "0dd93265d8ebe326dd2a72e4c9563580c80e3843d6ae8e6ecf85bae696c4aea0",
+      "data/CC-MAIN-2021-10/004_00048.parquet": "c95da269a7a10a713663b8b784030ff74dde1440b05345ef944a048eafade63d",
+      "data/CC-MAIN-2022-05/005_00046.parquet": "ed94dedbbd3494f6eb1681888490d1cc9b5e6e03bf35ab89ca9058bfd278b110",
+      "data/CC-MAIN-2023-06/006_00046.parquet": "12c5764162861efa922c5e9df408ca5aaf747079abb35856e5ff07269efcd794"
+    },
+    "shards": [
+      "data/CC-MAIN-2019-09/000_00000.parquet",
+      "data/CC-MAIN-2019-09/000_00001.parquet",
+      "data/CC-MAIN-2019-09/004_00049.parquet",
+      "data/CC-MAIN-2021-10/000_00000.parquet",
+      "data/CC-MAIN-2021-10/004_00048.parquet",
+      "data/CC-MAIN-2022-05/005_00046.parquet",
+      "data/CC-MAIN-2023-06/006_00046.parquet"
+    ]
+  },
+  "split_fractions": {
+    "calibration": 0.01,
+    "test": 0.01,
+    "train": 0.97,
+    "val": 0.01
+  },
+  "split_order": [
+    "train",
+    "val",
+    "test",
+    "calibration"
+  ],
+  "token_offset_semantics": "source_token_* are legacy processed document stream offsets including synthetic EOS; processed_token_* exclude EOS; no original character/byte alignment",
+  "tokenizer": {
+    "eos_id": 50256,
+    "fingerprint_sha256": "5e915a49323da8b419011d3c3c0f1d098da4302b46c9b54ca83761860eafca94",
+    "name": "gpt2",
+    "package": "tiktoken",
+    "regex_pattern": "'(?:[sdmt]|ll|ve|re)| ?\\p{L}++| ?\\p{N}++| ?[^\\s\\p{L}\\p{N}]++|\\s++$|\\s+(?!\\S)|\\s",
+    "special_tokens": {
+      "<|endoftext|>": 50256
+    },
+    "version": "0.14.0",
+    "vocabulary_sha256": "bdc599f0a294cff99d60cf83aed3870857b30bc0d1d06164cae137831b55257c"
+  },
+  "tokens": {
+    "calibration": 31218051,
+    "test": 31149287,
+    "train": 3009867881,
+    "val": 27764781
+  }
+}

@@ -1,0 +1,135 @@
+- name: pre_rms_lr0.00026_s101
+  overrides:
+    model:
+      normalization: pre_rms
+    train:
+      lr: 0.00026
+      seed: 101
+- name: pre_rms_lr0.00045_s101
+  overrides:
+    model:
+      normalization: pre_rms
+    train:
+      lr: 0.00045
+      seed: 101
+- name: pre_rms_lr0.00078_s101
+  overrides:
+    model:
+      normalization: pre_rms
+    train:
+      lr: 0.00078
+      seed: 101
+- name: branch_rms_lr0.00026_s101
+  overrides:
+    model:
+      normalization: branch_rms
+    train:
+      lr: 0.00026
+      seed: 101
+- name: branch_rms_lr0.00045_s101
+  overrides:
+    model:
+      normalization: branch_rms
+    train:
+      lr: 0.00045
+      seed: 101
+- name: branch_rms_lr0.00078_s101
+  overrides:
+    model:
+      normalization: branch_rms
+    train:
+      lr: 0.00078
+      seed: 101
+- name: sandwich_rms_lr0.00026_s101
+  overrides:
+    model:
+      normalization: sandwich_rms
+    train:
+      lr: 0.00026
+      seed: 101
+- name: sandwich_rms_lr0.00045_s101
+  overrides:
+    model:
+      normalization: sandwich_rms
+    train:
+      lr: 0.00045
+      seed: 101
+- name: sandwich_rms_lr0.00078_s101
+  overrides:
+    model:
+      normalization: sandwich_rms
+    train:
+      lr: 0.00078
+      seed: 101
+- name: group_rms_lr0.00026_s101
+  overrides:
+    model:
+      normalization: group_rms
+    train:
+      lr: 0.00026
+      seed: 101
+- name: group_rms_lr0.00045_s101
+  overrides:
+    model:
+      normalization: group_rms
+    train:
+      lr: 0.00045
+      seed: 101
+- name: group_rms_lr0.00078_s101
+  overrides:
+    model:
+      normalization: group_rms
+    train:
+      lr: 0.00078
+      seed: 101
+- name: spectral_rms_lr0.00026_s101
+  overrides:
+    model:
+      normalization: spectral_rms
+    train:
+      lr: 0.00026
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0
+- name: spectral_rms_lr0.00045_s101
+  overrides:
+    model:
+      normalization: spectral_rms
+    train:
+      lr: 0.00045
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0
+- name: spectral_rms_lr0.00078_s101
+  overrides:
+    model:
+      normalization: spectral_rms
+    train:
+      lr: 0.00078
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0
+- name: lagged_lr0.00026_s101
+  overrides:
+    model:
+      normalization: lagged
+      final_normalization: lagged
+    train:
+      lr: 0.00026
+      seed: 101
+- name: lagged_lr0.00045_s101
+  overrides:
+    model:
+      normalization: lagged
+      final_normalization: lagged
+    train:
+      lr: 0.00045
+      seed: 101
+- name: lagged_lr0.00078_s101
+  overrides:
+    model:
+      normalization: lagged
+      final_normalization: lagged
+    train:
+      lr: 0.00078
+      seed: 101

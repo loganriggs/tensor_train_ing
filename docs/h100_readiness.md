@@ -13,6 +13,7 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | Depth scaling (CompleteP, `depth_residual_base: 12`) | Verified at 24 layers only | Joint 24×1024 sweep; ≥48 layers untested |
 | LR vs token horizon (does the optimum shift with longer training?) | **Running now** (`configs/lr_horizon`, 50M vs 300M tokens) | Matters for a 20–30B-token run |
 | Global batch size (critical batch) | **Queued** (`runs/critical_batch/run.sh`) | Matters most on 8+ GPUs (large global batch) |
+| **Normalization package** (6 options; brief §1, never run) | **Queued next** (`configs/norm_screen`, 18 runs, ~4.5 h): runs before the batch/exponent experiments, which assume `pre_rms` | If `lagged` (fully polynomial) is close, that's the headline interpretability result |
 | Width exponent (is ½ right?) | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |
 | Behaviour at a compute-optimal horizon | **Not yet tested**: all runs ≤ 300M tokens | Plan: 100M model × ~2B tokens here (~8 h) before the rental |
 

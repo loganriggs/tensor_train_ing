@@ -1,0 +1,55 @@
+# H100 run, 1.4B (24x2048), Chinchilla ~20 tokens/param = 28B tokens. Built 2026-10-18 from today's measurements:
+# - LR: horizon rule LR_opt(D) ~= 5.7e-4*(D/3e8)^-0.10 -> ~3.5e-4 at 28B (8k batch); critical batch: at 128k-256k tokens/update the best
+#   multiplier was ~x2 (x4 worse) -> lr 7e-4 at width 512 (width scaling applies (512/w)^0.5). UNCERTAIN: run the day-1 LR bracket
+#   {5e-4, 7e-4, 1e-3} for ~1B tokens each and keep the best (docs/h100_readiness.md).
+# - Batch 262144 tokens/update: within the measured no-penalty range (>=128k).
+# - Sparse log-spaced milestones (1B, 2B, 4B, ...) + 2 rolling recovery states; final + 90% branch kept.
+# Fill in on day 1: project.gpu_hourly_rate_usd, data.manifest / evaluation.validation_manifest (28B prep).
+# Variant A: pre_rms + QK-clip tau=100 (the recipe proven to 1B here).
+data:
+  context: 2048
+  manifest: REQUIRED_IMMUTABLE_MANIFEST
+  micro_batch_size: 4
+evaluation:
+  seed: 0
+  validation_manifest: REQUIRED_VALIDATION_MANIFEST
+model:
+  activation_checkpointing: true
+  d_key: 128
+  d_mlp: 4096
+  d_model: 2048
+  d_value: 128
+  depth_residual_base: 12
+  heads: 16
+  layers: 24
+  loss_chunk_tokens: 4096
+  width_scaling_base: 512
+project:
+  dry_run: true
+  gpu_hourly_rate_usd: REQUIRED_ACTUAL_RATE
+  keep_recovery_checkpoints: 2
+  milestone_tokens:
+  - 1000000000
+  - 2000000000
+  - 4000000000
+  - 8000000000
+  - 16000000000
+  - 32000000000
+  - 64000000000
+  - 128000000000
+  - 256000000000
+  - 512000000000
+  reserve_usd: 150
+  spend_ledger: runs/pilot_1b/spend.json
+  stage: D
+  total_budget_usd: 1000
+train:
+  compile: true
+  deterministic: false
+  global_prediction_tokens_per_update: 262144
+  lr: 0.0007
+  optimizer: adamw
+  qk_clip_every_steps: 50
+  qk_clip_tau: 100.0
+  rung_total_tokens: 28000000000
+  seed: 101

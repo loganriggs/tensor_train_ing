@@ -100,3 +100,8 @@ Before a component replaces part of the H100 recipe, test in one queue rebuild: 
 seed and LR that diverged before (w2048, seed 202, LR 1.35e-3); (5) analysis cost (`scripts/analyze_kept_finals.sh`); (6) throughput at the target width on the same GPU (tok/s from the run's metrics). Current candidate:
 `spectral_rms`: (1) done, −0.025 on 2 seeds; (2) done, optimum 7.8e-4 at width 512; (5) done, 3.7× lower ablation distortion;
 (3)–(4) 1B stability without QK-clip running (`configs/spectral1b`, ~20:40).
+
+### Ready-to-launch configs (22:30 Oct 18): `configs/h100/1b_pre_rms.yaml` (A) and `configs/h100/1b_spectral.yaml` (B)
+1.4B (24×2048), 28B tokens (~106k updates at 262k tokens/update), LR 7e-4 at width 512 (horizon rule × measured batch multiplier),
+sparse milestones. Day 1 fills in the GPU rate and the 28B-token manifests. **Day-1 LR bracket:** {5e-4, 7e-4, 1e-3} for ~1B tokens each on the
+chosen variant, keep the best, then launch the full run. A vs B is the user's call (see docs/scaling.md, "spectral_rms at 1B").

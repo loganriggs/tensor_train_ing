@@ -627,6 +627,50 @@
       "elapsed_seconds": 74.00112737796735
     },
     "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr2": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.15509557080981154,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1323.4037803160027
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr2/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.008646959024256303,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr2/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 73.78301134705544
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr2": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.14818793923469067,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1264.4621503789676
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr2/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.008759225663926925,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr2/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 74.74096323805861
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr4": {
       "status": "running",
       "rate_usd_per_hour": 0.4219,
       "reserved_usd": 2.78454,

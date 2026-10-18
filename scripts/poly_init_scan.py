@@ -18,6 +18,7 @@ import yaml
 from tnlm.config import ModelConfig
 from tnlm.model import TensorLM
 from tnlm.normalization import LaggedRMS
+from tnlm.token_format import read_split_tokens
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,7 +48,7 @@ def main(argv=None):
     ap.add_argument("--layers", type=int, default=12); ap.add_argument("--d-model", type=int, default=256)
     ap.add_argument("--heads", type=int, default=4); ap.add_argument("--set", nargs="+", action="append", default=[])
     a = ap.parse_args(argv)
-    tok = np.fromfile(ROOT / "data/fineweb_pilot_5m/calibration.tokens.bin", dtype="<i4")  # token files are int32 (tnlm.data)
+    tok = np.asarray(read_split_tokens(ROOT / "data/fineweb_pilot_5m", "calibration"))  # shared format (tnlm.token_format)
     X = torch.from_numpy(tok[: 256 * 64].astype(np.int64)).view(256, 64)
     for group in [[]] + a.set:
         kw = {k: yaml.safe_load(v) for k, v in (kv.split("=", 1) for kv in group)}

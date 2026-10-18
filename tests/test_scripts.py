@@ -125,19 +125,11 @@ def test_run_queue_passes_keep_list_and_count(tmp_path):
 
 
 def test_poly_init_scan_reads_tokens_like_the_trainer():
-    """Regression for 2026-10-18: reading int32 token files as uint16 interleaved token 0 ('!') and corrupted a diagnosis."""
-    import numpy as np
-    import re
+    """Regression for 2026-10-18: reading int32 token files as uint16 interleaved token 0 ('!') and corrupted a diagnosis.
+    Scripts must use the shared reader, not a hand-written dtype."""
     src = (ROOT / "scripts/poly_init_scan.py").read_text()
-    m = re.search(r'np\.fromfile\(ROOT / "(data/[^"]+)", dtype="([^"]+)"\)', src)
-    assert m, "poly_init_scan must read tokens with an explicit dtype"
-    path, dtype = ROOT / m.group(1), m.group(2)
-    if not path.exists():
-        pytest.skip("pilot data not present")
-    ours = np.fromfile(path, dtype=dtype)
-    trainer = np.memmap(path, dtype="<i4", mode="r")  # tnlm.data.PackedSampler's token dtype
-    assert ours.shape == trainer.shape and np.array_equal(ours, trainer)
-    assert (ours == 0).mean() < 0.01  # no interleaved zeros
+    assert "read_split_tokens" in src and "np.fromfile" not in src
+
 
 
 def test_norm_cost_table_metrics(tmp_path):

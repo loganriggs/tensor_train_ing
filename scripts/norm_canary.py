@@ -4,8 +4,8 @@
                                   [--steps 600] [--lr 1e-3] [--threads 6] [--model-set qk_init_scale=0.1 ...]
 
 Trains each package on the 5M-token pilot set (context 64, 512 tokens/update) from `configs/norm_screen/base.yaml`, with
-the warmup the schedule implies (max(100, 1% of steps)). Lagged statistics use a half-life in *tokens*, so at the canary's 512
-tokens/update pass `--model-set lagged_half_life_tokens=62500` to match the GPU screen's ~122-update half-life. Then it prints a thinned loss / taper-gate / anchor trace and, for lagged models,
+the warmup the schedule implies (max(100, 1% of steps)). Token-denominated settings (lagged_half_life_tokens) are rescaled
+automatically by 512 / base tokens-per-update so they keep their per-update meaning (override with --model-set). Then it prints a thinned loss / taper-gate / anchor trace and, for lagged models,
 the calibrated mean_sq per site. Use before giving any new package GPU time. Promoted from one-off scratch scripts used three times
 on 2026-10-18; findings in docs/scaling.md ("Polynomial normalization canaries").
 """
@@ -42,6 +42,10 @@ def main(argv=None):
         cfg["model"].update(layers=a.layers, d_model=a.d_model, heads=a.heads, d_key=dk, d_value=dk, d_mlp=3 * a.d_model,
                             width_scaling_base=None, normalization=norm,
                             final_normalization=norm if norm in ("lagged", "taper") else "rms")
+        # Token-denominated settings must keep their *per-update* meaning when the batch shrinks to 512 tokens/update
+        # (a 1e6-token half-life is ~122 updates at the screen's 8192 tokens/update but ~1950 here, i.e. effectively frozen).
+        ratio = 512 / base["train"]["global_prediction_tokens_per_update"]
+        cfg["model"]["lagged_half_life_tokens"] = base["model"].get("lagged_half_life_tokens", 1.0e6) * ratio
         cfg["model"].update({k: yaml.safe_load(v) for k, v in (kv.split("=", 1) for kv in a.model_set)})
         cfg["data"].update(manifest=PILOT, context=64, micro_batch_size=8)
         cfg["evaluation"].update(validation_manifest=PILOT)

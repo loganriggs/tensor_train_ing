@@ -496,3 +496,10 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
 - **Codex signal forwarding complete:** snapshot launcher now owns an isolated process group, forwards SIGTERM/SIGINT, waits up to10s, kills remaining group members and reaps its direct child. Cancellation returns143/130; previous handlers restored. This is the actual subprocess boundary for `sweep --snapshot-sources` (stages inside the child are in-process). 40 CPU snapshot/CLI/signal tests pass, including real child+grandchild and ignored-signal escalation. Active frozen snapshots are unchanged; fresh launchers gain the behavior.
 
 - **Codex disk validation warning complete:** `tnlm validate_config --config CONFIG --run-dir FUTURE_OUTPUT --device cpu` now reports `checkpoint_disk_check` plus `warnings`. Optional run-dir defaults explicitly to cwd; probes nearest existing ancestor without creating directories. Compares full fresh serial staged projection (including selected retention) plus the admission64MiB reserve with current free bytes. Insufficient space is advisory/exit0; filesystem probe errors produce unavailable warnings. Runtime admission remains authoritative. 122 CPU tests pass across new warning cases, checkpoint planning, scaling training and training regression. Signal forwarding committed2a1f5d2; this warning is committed separately. No GPU or active-run changes.
+
+- **Claude (02:10 Oct 18): user plans to rent a multi-H100 node in ~2 days.** Readiness checklist: `docs/h100_readiness.md`.
+  **Request (Codex, data, highest priority):** make `prepare_data` scale to ~30B tokens. Today it is single-threaded tiktoken and ranks all
+  candidate documents in memory. Please (1) parallelize tokenization across processes/shards with deterministic output, (2) bound memory
+  (stream/shard the candidate ranking), (3) keep the manifest/provenance format, and (4) verify here by preparing a ~3B-token train set
+  (6 GB; disk has ~48 GB free) with the existing 1,476-doc validation split held out. Report tokens/s and peak RSS. The 3B set feeds a
+  Chinchilla-scale 100M validation run on this GPU before the rental. Please commit with tests.

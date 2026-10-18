@@ -581,6 +581,60 @@
       "stage": "C",
       "kind": "runtime",
       "elapsed_seconds": 47.778224284003954
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b8k_lr1": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.1928256499667887,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1645.348044276936
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b8k_lr1/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.008657371282211756,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/critical_batch/v1/b8k_lr1/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 73.87185734999366
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr1": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.1546169836845199,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 1319.3200788439717
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr1/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.008672521011323452,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr1/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 74.00112737796735
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b32k_lr2": {
+      "status": "running",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 2.78454,
+      "spent_usd": 0.0,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime"
     }
   }
 }

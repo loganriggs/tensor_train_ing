@@ -374,6 +374,10 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
     for artifact in out.iterdir():
         with artifact.open('rb') as f:
             os.fsync(f.fileno())
+    # Derived mmap metadata is ready before the completion marker is published.
+    # It is deliberately outside the immutable manifest's artifact identity.
+    from .sampler_index import ensure_sampler_index
+    ensure_sampler_index(out, manifest)
     temporary_manifest = out / '.manifest.json.tmp'
     with temporary_manifest.open('w') as f:
         f.write(encoded_manifest)
@@ -453,37 +457,8 @@ class PackedSampler:
         for name, count in counts.items():
             if (root / f'{name}.tokens.bin').stat().st_size != count * 4:
                 raise ValueError(f'token payload size mismatch: {name}')
-        self.docs = []
-        seen_ids, seen_numeric_ids = set(), set()
-        covered = dict.fromkeys(SPLIT_ORDER, 0)
-        document_count = 0
-        with (root / 'documents.jsonl').open() as stream:
-            for line_number, line in enumerate(stream, 1):
-                try:
-                    doc = json.loads(line)
-                    name = doc['split']
-                    doc_id, numeric_id = doc['id'], doc['numeric_id']
-                    start, end = doc['token_start'], doc['token_end']
-                    if name not in covered or not isinstance(doc_id, str) or doc_id in seen_ids:
-                        raise ValueError('invalid split or duplicate document ID')
-                    if type(numeric_id) is not int or numeric_id < 0 or numeric_id in seen_numeric_ids:
-                        raise ValueError('invalid or duplicate numeric document ID')
-                    if type(start) is not int or type(end) is not int or start != covered[name] or not start < end <= counts[name]:
-                        raise ValueError('document token ranges must cover each split contiguously')
-                    for field in ('content_sha256', 'processed_sha256'):
-                        digest = doc[field]
-                        if not isinstance(digest, str) or len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest.lower()):
-                            raise ValueError(f'invalid {field}')
-                    seen_ids.add(doc_id)
-                    seen_numeric_ids.add(numeric_id)
-                    covered[name] = end
-                    document_count += 1
-                    if name == split:
-                        self.docs.append(doc)
-                except (KeyError, TypeError, ValueError) as error:
-                    raise ValueError(f'invalid document metadata at line {line_number}: {error}') from error
-        if covered != counts or document_count != self.manifest.get('documents'):
-            raise ValueError('document metadata does not cover declared dataset')
+        from .sampler_index import load_sampler_index
+        self.docs = load_sampler_index(root, self.manifest, split)
         if not self.docs:
             raise ValueError(f'empty split: {split}')
         self.tokens = np.memmap(root / f'{split}.tokens.bin', dtype='<i4', mode='r')
@@ -494,13 +469,149 @@ class PackedSampler:
         self._context_transition = None
 
     def _permutation(self, epoch):
-        order = list(range(len(self.docs)))
-        random.Random(f'{self.seed}:{epoch}').shuffle(order)
-        return order
+        if getattr(self, '_order_epoch', None) == epoch:
+            return self.order
+        if not hasattr(self.docs, 'cache_dir'):
+            order = np.arange(len(self.docs), dtype=np.int64)
+            random.Random(f'{self.seed}:{epoch}').shuffle(order)
+            order.flags.writeable = False
+            return order
+        import fcntl
+        import os
+        import tempfile
+        key = {'version': 1, 'manifest': self.manifest_hash, 'split': self.split,
+               'seed': str(self.seed), 'epoch': epoch, 'documents': len(self.docs)}
+        digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()
+        cache = self.docs.cache_dir / 'packing'
+        cache.mkdir(exist_ok=True)
+        path, meta = cache / f'{digest}.npy', cache / f'{digest}.json'
+        with (cache / f'{digest}.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                saved = json.loads(meta.read_text())
+                if saved['identity'] != key or _sha(path) != saved['sha256']:
+                    raise ValueError('invalid permutation cache')
+                order = np.load(path, mmap_mode='r', allow_pickle=False)
+                if order.shape != (len(self.docs),) or order.dtype != np.dtype('<i8'):
+                    raise ValueError('invalid permutation cache shape')
+                return order
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            # The first builder owns one compact array; subsequent ranks map
+            # the same read-only file. Python's shuffle retains the old order.
+            order = np.arange(len(self.docs), dtype='<i8')
+            random.Random(f'{self.seed}:{epoch}').shuffle(order)
+            fd, temporary = tempfile.mkstemp(prefix='order-', dir=cache)
+            try:
+                with os.fdopen(fd, 'wb') as stream:
+                    np.save(stream, order, allow_pickle=False)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                checksum = _sha(temporary)
+                os.replace(temporary, path)
+                temporary = None
+                fd, temporary = tempfile.mkstemp(prefix='order-meta-', dir=cache)
+                with os.fdopen(fd, 'w') as stream:
+                    json.dump({'identity': key, 'sha256': checksum}, stream, sort_keys=True)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, meta)
+                temporary = None
+            finally:
+                if temporary is not None:
+                    Path(temporary).unlink(missing_ok=True)
+            return np.load(path, mmap_mode='r', allow_pickle=False)
 
-    def _count_lengths(self, lengths):
+    def _epoch_rows(self, order, epoch):
+        """Cache the deterministic context-dependent row count, not packed rows."""
+        if not hasattr(self.docs, "cache_dir"):
+            rows, fill = self._count_lengths(self._lengths(order))
+            return rows + bool(fill)
+        import fcntl
+        import os
+        import tempfile
+        key = {'version': 2, 'manifest': self.manifest_hash, 'split': self.split,
+               'seed': str(self.seed), 'epoch': epoch, 'context': self.context}
+        digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()
+        cache = self.docs.cache_dir / 'packing'
+        cache.mkdir(exist_ok=True)
+        path = cache / f'rows-{digest}.json'
+        with (cache / f'rows-{digest}.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                saved = json.loads(path.read_text())
+                payload = saved['payload']
+                checksum = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+                if saved['sha256'] != checksum or payload['identity'] != key:
+                    raise ValueError('invalid row count cache')
+                rows = payload['rows']
+                if type(rows) is not int or not 0 < rows <= self.manifest['tokens'][self.split]:
+                    raise ValueError('invalid row count')
+                checkpoints = payload['checkpoints']
+                expected_d = [*range(0, len(order), 4096), len(order)]
+                if (not isinstance(checkpoints, list) or len(checkpoints) != len(expected_d)
+                        or any(not isinstance(row, list) or len(row) != 3
+                               or any(type(v) is not int for v in row)
+                               or row[0] != d or row[1] < 0 or not 0 <= row[2] <= self.context
+                               for d, row in zip(expected_d, checkpoints))
+                        or checkpoints[0] != [0, 0, 0]
+                        or any(left[1] > right[1] for left, right in zip(checkpoints, checkpoints[1:]))
+                        or checkpoints[-1][1] + bool(checkpoints[-1][2]) != rows):
+                    raise ValueError('invalid sparse row checkpoints')
+                self._packing_prefix = (epoch, self.context, checkpoints)
+                return rows
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            # Random traversal of the structured mmap would fault all 40 bytes
+            # per document into each rank's RSS. Read bounded chunks through the
+            # file API and keep only the 8-byte lengths for this first scan.
+            lengths = np.empty(len(self.docs), dtype=np.int64)
+            with (self.docs.cache_dir / f'{self.split}.index.bin').open('rb') as stream:
+                for start in range(0, len(self.docs), 65536):
+                    count = min(65536, len(self.docs) - start)
+                    chunk = np.fromfile(stream, dtype=self.docs.rows.dtype, count=count)
+                    if len(chunk) != count:
+                        raise ValueError('truncated document sampler index during row count')
+                    np.subtract(chunk['token_end'], chunk['token_start'],
+                                out=lengths[start:start + count])
+            rows = fill = 0
+            checkpoints = [[0, 0, 0]]
+            for start in range(0, len(order), 4096):
+                end = min(start + 4096, len(order))
+                rows, fill = self._count_lengths(
+                    (int(lengths[index]) for index in order[start:end]), rows=rows, fill=fill)
+                checkpoints.append([end, rows, fill])
+            del lengths
+            rows += bool(fill)
+            payload = {'identity': key, 'rows': rows, 'checkpoints': checkpoints}
+            checksum = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+            fd, temporary = tempfile.mkstemp(prefix='rows-', dir=cache)
+            try:
+                with os.fdopen(fd, 'w') as stream:
+                    json.dump({'payload': payload, 'sha256': checksum}, stream, sort_keys=True)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, path)
+            finally:
+                Path(temporary).unlink(missing_ok=True)
+            self._packing_prefix = (epoch, self.context, checkpoints)
+            return rows
+
+    def _length(self, index):
+        if not hasattr(self.docs, 'starts'):
+            doc = self.docs[index]
+            return doc['token_end'] - doc['token_start']
+        return self.docs.length(index)
+
+    def _start(self, index):
+        return self.docs.start(index) if hasattr(self.docs, 'starts') else self.docs[index]['token_start']
+
+    def _lengths(self, order, stop=None):
+        for index in order if stop is None else order[:stop]:
+            yield self._length(index)
+
+    def _count_lengths(self, lengths, *, rows=0, fill=0):
         # O(documents), including context=1 and very long individual documents.
-        rows = fill = 0
         width = self.context + 1
         for remaining in lengths:
             capacity = width - fill
@@ -524,22 +635,41 @@ class PackedSampler:
         # singleton can place the fork at epoch end before the mask is consumed.
         self._context_transition = None
         self.order = self._permutation(self.epoch)
-        rows, fill = self._count_lengths(self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in self.order)
-        self.epoch_row_count = rows + bool(fill)
+        self._order_epoch = self.epoch
+        self.epoch_row_count = self._epoch_rows(self.order, self.epoch)
         self.document_cursor = self.token_cursor = 0
 
-    def _seek_row(self, order, cursor):
-        """O(documents) canonical row-boundary seek; no token/row materialization."""
-        d = t = fill = 0
-        remaining_rows = cursor
+    def _prefixes(self, order, epoch):
+        if not hasattr(self.docs, 'cache_dir'):
+            return [[0, 0, 0]]
+        cached = getattr(self, '_packing_prefix', None)
+        if cached is None or cached[:2] != (epoch, self.context):
+            self._epoch_rows(order, epoch)
+        return self._packing_prefix[2]
+
+    def _prefix_count(self, order, epoch, document_cursor):
+        checkpoints = self._prefixes(order, epoch)
+        point = min(document_cursor // 4096, len(checkpoints) - 1)
+        d, rows, fill = checkpoints[point]
+        return self._count_lengths((self._length(i) for i in order[d:document_cursor]),
+                                   rows=rows, fill=fill)
+
+    def _seek_row(self, order, cursor, epoch=None):
+        """Seek from a sparse document prefix; no token/row materialization."""
+        from bisect import bisect_left
+        epoch = self.epoch if epoch is None else epoch
+        checkpoints = self._prefixes(order, epoch)
+        point = max(0, bisect_left(checkpoints, cursor, key=lambda item: item[1]) - 1)
+        d, rows, fill = checkpoints[point]
+        t = 0
+        remaining_rows = cursor - rows
         width = self.context + 1
         while remaining_rows:
             if d == len(order):
                 if fill and remaining_rows == 1:
                     return d, 0
                 raise ValueError('invalid canonical row seek')
-            doc = self.docs[order[d]]
-            length = doc['token_end'] - doc['token_start']
+            length = self._length(order[d])
             remaining = length - t
             if fill == 0 and remaining >= width:
                 count = min(remaining_rows, (remaining - 1) // self.context)
@@ -568,9 +698,9 @@ class PackedSampler:
             epoch, d, t = epoch + 1, 0, 0
             order = self._permutation(epoch)
         # Number of complete canonical new-context rows up to the scored token.
-        lengths = [self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order[:d]]
-        cursor, _ = self._count_lengths((*lengths, t + 1))
-        document_cursor, token_cursor = self._seek_row(order, cursor)
+        rows, fill = self._prefix_count(order, epoch, d)
+        cursor, _ = self._count_lengths((t + 1,), rows=rows, fill=fill)
+        document_cursor, token_cursor = self._seek_row(order, cursor, epoch)
         return epoch, cursor, document_cursor, token_cursor, d, t
 
     def fork_context(self, context):
@@ -605,11 +735,10 @@ class PackedSampler:
         row, fill = [], 0
         width = self.context + 1
         while self.document_cursor < len(self.order) and fill < width:
-            i = self.order[self.document_cursor]
-            doc = self.docs[i]
-            length = doc['token_end'] - doc['token_start']
+            i = int(self.order[self.document_cursor])
+            length = self._length(i)
             count = min(width - fill, length - self.token_cursor)
-            row.append((i, doc['token_start'] + self.token_cursor, count))
+            row.append((i, self._start(i) + self.token_cursor, count))
             fill += count
             self.token_cursor += count
             if self.token_cursor == length:
@@ -630,6 +759,7 @@ class PackedSampler:
                 self.cursor = 0
                 self._order()
             transition = self._context_transition
+            row_start_document = self.document_cursor
             row = self._next_row()
             self._context_transition = None
             self.cursor += 1
@@ -648,7 +778,7 @@ class PackedSampler:
                                  'source_token_start': start - doc['token_start'],
                                  'source_token_end': start - doc['token_start'] + count})
                 tok.extend(self.tokens[start:start + count].tolist())
-                docids.extend([self.docs[i]['numeric_id']] * count)
+                docids.extend([self.docs.numeric_id(i)] * count)
             self._batch_mappings.append({'epoch': self.epoch, 'row_cursor': self.cursor - 1,
                                          'input_length': min(self.context, len(tok)),
                                          'ranges': mappings})
@@ -664,10 +794,9 @@ class PackedSampler:
             if transition is not None:
                 source = transition['source_state']
                 _, _, _, _, frontier_doc, frontier_token = self._fork_position(source)
-                positions = {self.docs[i]['numeric_id']: position for position, i in enumerate(self.order)}
                 exposure = {'prefix_tokens_at_or_before_watermark': 0, 'masked_prediction_targets': 0}
-                for mapping in mappings:
-                    position = positions[mapping['numeric_id']]
+                for row_document, mapping in enumerate(mappings):
+                    position = row_start_document + row_document
                     for packed in range(mapping['packed_token_start'], min(n, mapping['packed_token_end'])):
                         offset = mapping['source_token_start'] + packed - mapping['packed_token_start']
                         if position < frontier_doc or (position == frontier_doc and offset <= frontier_token):
@@ -722,23 +851,21 @@ class PackedSampler:
         # Build/validate in locals: a rejected restore must leave the live stream
         # unchanged, including cached last-batch mappings.
         order = self._permutation(epoch)
-        rows, fill = self._count_lengths(self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order)
-        epoch_row_count = rows + bool(fill)
+        epoch_row_count = self._epoch_rows(order, epoch)
         if cursor > epoch_row_count or document_cursor > len(order):
             raise ValueError('invalid sampler cursor')
         if document_cursor == len(order):
             if token_cursor != 0 or cursor != epoch_row_count:
                 raise ValueError('inconsistent completed epoch cursor')
         else:
-            doc = self.docs[order[document_cursor]]
-            length = doc['token_end'] - doc['token_start']
+            length = self._length(order[document_cursor])
             if token_cursor >= length or cursor == epoch_row_count:
                 raise ValueError('invalid document token cursor')
-            prefix_lengths = [self.docs[i]['token_end'] - self.docs[i]['token_start'] for i in order[:document_cursor]]
-            previous_rows, previous_fill = self._count_lengths(prefix_lengths)
+            previous_rows, previous_fill = self._prefix_count(order, epoch, document_cursor)
             at_document_start = token_cursor == 0 and previous_fill == 0 and previous_rows == cursor
             if not at_document_start:
-                previous_rows, previous_fill = self._count_lengths((*prefix_lengths, token_cursor + 1))
+                previous_rows, previous_fill = self._count_lengths(
+                    (token_cursor + 1,), rows=previous_rows, fill=previous_fill)
                 if token_cursor >= length - 1 or previous_fill != 0 or previous_rows != cursor:
                     raise ValueError('inconsistent row/document/token cursors')
         import copy
@@ -760,6 +887,7 @@ class PackedSampler:
             if (epoch, cursor, document_cursor, token_cursor) != expected:
                 raise ValueError('context transition cursor mismatch')
         self.epoch, self.order, self.epoch_row_count = epoch, order, epoch_row_count
+        self._order_epoch = epoch
         self.cursor = cursor
         self.document_cursor, self.token_cursor = document_cursor, token_cursor
         self._context_transition = transition

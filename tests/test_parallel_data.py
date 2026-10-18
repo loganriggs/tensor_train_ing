@@ -21,7 +21,7 @@ def _documents(manifest):
 
 
 def _artifacts(manifest):
-    return {path.name: path.read_bytes() for path in manifest.parent.iterdir()}
+    return {path.relative_to(manifest.parent): path.read_bytes() for path in manifest.parent.rglob('*') if path.is_file()}
 
 
 def _rank(record):

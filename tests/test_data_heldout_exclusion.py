@@ -65,8 +65,8 @@ def test_heldout_filter_serial_parallel_are_identical(tmp_path):
                   tokenization_batch_bytes=1)
     serial = prepare_data(tmp_path / 'serial', workers=1, **common)
     parallel = prepare_data(tmp_path / 'parallel', workers=2, **common)
-    assert {p.name: p.read_bytes() for p in serial.parent.iterdir()} == {
-        p.name: p.read_bytes() for p in parallel.parent.iterdir()}
+    assert {p.relative_to(serial.parent): p.read_bytes() for p in serial.parent.rglob('*') if p.is_file()} == {
+        p.relative_to(parallel.parent): p.read_bytes() for p in parallel.parent.rglob('*') if p.is_file()}
     assert json.loads(parallel.read_text())['heldout_exclusion']['excluded_unique_documents'] == 3
 
 

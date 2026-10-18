@@ -14,6 +14,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 4 | `make_pairs.py OUT.yaml NAME=LEFT_RUN,RIGHT_RUN ...` | Paired-comparison spec with verified absolute paths |
 | | `print_pairs.py comparisons.json` | One line per pair: ΔCE and document-bootstrap CI |
 | | `plot_scaling_losses.py` | Training-loss figures for docs/ (Codex) |
+| 4b | `norm_cost_table.py LABEL=analysis.json ...` | Analysis-cost table per normalization package (5 metrics) |
 | 5 | `export_results.py` | Weight-free mirror of runs/ into git-tracked results/ |
 | | `autocommit_results.sh` | Hourly export, commit and push of results/ (runs in the background) |
 

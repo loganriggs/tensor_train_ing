@@ -138,3 +138,18 @@ def test_poly_init_scan_reads_tokens_like_the_trainer():
     trainer = np.memmap(path, dtype="<i4", mode="r")  # tnlm.data.PackedSampler's token dtype
     assert ours.shape == trainer.shape and np.array_equal(ours, trainer)
     assert (ours == 0).mean() < 0.01  # no interleaved zeros
+
+
+def test_norm_cost_table_metrics(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import math
+    import norm_cost_table as nct
+    site = {"denominator": {"q01": 0.5, "q99": 2.0}, "radial_over_direct_random_delta": {"q50": 0.02}}
+    n_class = {"operator_class": "N", "normalizer_sensitivity": {"sites": {"a": site, "b": site}},
+               "fixed_denominator": {"ce_live": 4.0, "ce_fixed": None, "nonfinite_metrics": ["ce_fixed"]},
+               "ablation": {"components": {"L0.mlp": {"norm_mediated(live-clamped)": {"mean": -0.3}}}}}
+    p_class = {"operator_class": "P", "normalizer_sensitivity": {"sites": {}}, "fixed_denominator": {}, "ablation": {"components": {}}}
+    (tmp_path / "n.json").write_text(json.dumps(n_class)); (tmp_path / "p.json").write_text(json.dumps(p_class))
+    n, p = nct.row(str(tmp_path / "n.json")), nct.row(str(tmp_path / "p.json"))
+    assert n["sites"] == 2 and n["spread"] == 4.0 and n["radial"] == 0.02 and math.isinf(n["frozen_gap"]) and n["ablation"] == 0.3
+    assert p["sites"] == 0 and p["frozen_gap"] == 0.0 and p["ablation"] is None

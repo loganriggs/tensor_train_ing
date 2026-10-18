@@ -540,3 +540,17 @@ base width 512** (width scaling then applies the ×(512/w)^½ rule), with QK-cli
 Spectral Muon makes hidden-layer updates width-independent, so its LR should transfer across width with no √width rule. The logits still drift,
 because the unembedding is on the AdamW side at a fixed LR. A coordinate check measures only early steps, so it's queued for an actual transfer test
 (`configs/muon_transfer`: widths 512/1024 × Muon LR {1e-3, 2e-3, 4e-3}, 50M cooled tokens, QK-clip; CPU end-to-end OK). It runs after the exponent fit.
+
+## Normalization screen (brief §1; `configs/norm_screen`, 12×512 ~100M, 50M cooled tokens, seed 101; finished 13:59 Oct 18)
+| package | LR 2.6e-4 | 4.5e-4 | 7.8e-4 | best |
+| --- | ---: | ---: | ---: | ---: |
+| `pre_rms` (current default) | 4.869 | 4.792 | 4.791 | 4.791 |
+| `branch_rms` | **4.837** | 4.801 | 4.802 | 4.801 |
+| `sandwich_rms` | 4.910 | 4.796 | 4.789 | 4.789 |
+| `group_rms` | 4.857 | 4.816 | 4.790 | 4.790 |
+| **`spectral_rms`** (pre-RMS + σReparam weights, no QK-clip) | 4.881 | 4.807 | **4.766** | **4.766** |
+
+Four packages are within 0.012 of each other (≈ seed noise at this scale). **`spectral_rms` is 0.025 better and still improving at the top LR**, so its
+optimum is above 7.8e-4 and the true gap may be larger. One seed only. Follow-up queued next (`configs/norm_followup`): spectral at 1.35e-3 and 2.3e-3,
+plus seed 202 for spectral and pre_rms at 7.8e-4. `branch_rms` is the most robust at low LR. `lagged` was removed (diverges; see the canaries).
+Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).

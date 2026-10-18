@@ -49,3 +49,12 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | pilot_3b | 2.8B | ~56B | ~4 days | |
 | funded_7b | 6.9B | ~140B | ~3 weeks on 8; ~3 days on 64 | Needs more GPUs |
 | funded_32b | 34B | ~690B | needs ≥16 GPUs just to fit | Out of scope for one node |
+
+### Cost estimates (02:20; 6·N·D FLOPs at 35% MFU ≈ 350 TFLOP/s per H100; price per GPU-hour is an assumption)
+| Run | Tokens | GPU-h | at $1.5 / $2 / $3 per GPU-h |
+| --- | ---: | ---: | --- |
+| pilot_1b (1.4B), first-look | 10B | ~70 | $100 / $140 / $210 |
+| pilot_1b (1.4B), Chinchilla | 28B | ~190 | $280 / $380 / $570 |
+| funded_7b (6.9B), Chinchilla | 140B | ~4,700 (+~33% if activation checkpointing is needed) | $7.0k / $9.3k / $14k |
+
+MFU is the largest uncertainty (25–45% gives ×1.4–×0.8). The day-1 canary measures it. Recommendation: 1.4B first; decide 7B after its curve.

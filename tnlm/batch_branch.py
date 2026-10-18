@@ -14,6 +14,8 @@ def branch_config(cfg, *, batch_tokens, lr_scale, resume, context_fork, cooldown
         raise ValueError('lr_scale must be finite and positive')
     if context_fork or cooldown_steps is not None or cfg.train.schedule != 'constant_with_separate_cooldown':
         raise ValueError('batch branch requires constant schedule without cooldown or context fork')
+    if 'taper' in (cfg.model.normalization, cfg.model.final_normalization):
+        raise ValueError('TaperNorm batch branch would change the frozen gate schedule')
     if batch_tokens == cfg.train.global_prediction_tokens_per_update:
         raise ValueError('batch branch requires a different batch token quota')
     child = copy.deepcopy(cfg)

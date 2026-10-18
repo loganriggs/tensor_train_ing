@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 from .data import PackedSampler, batch_hash
-from .normalization import lagged_modules
+from .normalization import lagged_modules, taper_modules
 
 
 def stability_interval(cfg):
@@ -67,7 +67,7 @@ class TrainingStabilityProbe:
     def _run(self, model, operation):
         started = time.monotonic()
         modes = [(module, module.training) for module in model.modules()]
-        norms = [(module, module.collecting, module._valid) for module in lagged_modules(model)]
+        norms = [(module, module.collecting, module._valid) for module in lagged_modules(model) + taper_modules(model)]
         python_rng, numpy_rng = random.getstate(), np.random.get_state()
         devices = ([self.device.index if self.device.index is not None else torch.cuda.current_device()]
                    if self.device.type == 'cuda' else [])

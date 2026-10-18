@@ -32,6 +32,7 @@ from .reporting import summarize_runs
 from .runtime import evaluation_validator, full_config, resume_validator, seed_all, training_execution, determinism_metadata
 from .model import TensorLM
 from .training_stability import stability_interval, qk_clip_policy, TrainingStabilityProbe
+from .training_taper import TaperTraining, validate_taper_config
 from .normalization import lagged_modules, spectral_step
 
 
@@ -186,6 +187,11 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
     retention_policy = checkpoint_retention_policy(cfg)
     stability_every = stability_interval(cfg)
     clip_tau, clip_every = qk_clip_policy(cfg)
+    if validate_taper_config(cfg):
+        taper_total = schedule_steps(cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update)
+        taper_warmup = validate_schedule(cfg.train.schedule, taper_total)
+        if round(cfg.train.taper_end_fraction * taper_total) <= taper_warmup:
+            raise ValueError("TaperNorm endpoint must be strictly after positive warmup_steps")
     if cfg.train.schedule == 'cosine' and cooldown_end_tokens is not None:
         raise ValueError('cosine does not support a separate cooldown')
     validate_schedule(cfg.train.schedule, schedule_steps(cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update), cooldown_steps=cooldown_steps)
@@ -359,6 +365,9 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
         storage_admission = require_checkpoint_space(run_dir, storage_plan['required_additional_bytes'])
         (run_dir / 'checkpoint_storage_plan.json').write_text(json.dumps(
             {'plan': storage_plan, 'admission': storage_admission}, indent=2, allow_nan=False) + '\n')
+        taper = TaperTraining(model, cfg, total_steps=total_steps, warmup_steps=progress["warmup_steps"])
+        taper.before_step(progress["steps"])
+        taper.set_valid_mask(None)
         def save(name):
             save_checkpoint(run_dir / name, model, optimizer, sampler,
                                    config=full_config(cfg), progress=progress,
@@ -407,6 +416,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
             step_start = time.monotonic()
             if _step_profiler is not None:
                 _step_profiler.start_step(local_step)
+            taper.before_step(progress['steps'])
             schedule_step = progress.get('scheduler_step', progress['steps'])
             mult = (lr_multiplier(schedule_step, total_steps, cooldown_steps=cooldown_steps)
                     if cooldown_steps is not None else schedule_multiplier(schedule_step, total_steps, schedule=cfg.train.schedule, warmup_steps=progress['warmup_steps']))
@@ -417,6 +427,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                 spectral_step(model)
             wanted = min(cfg.train.global_prediction_tokens_per_update, token_limit - progress['tokens'])
             valid_total, loss_total, hashes = 0, 0.0, []
+            anchor_total = 0.0
             forward_input_positions, unscored_rows_omitted = 0, 0
             while valid_total < wanted:
                 if time.monotonic() - started >= max_seconds:
@@ -451,12 +462,14 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                     hashes.append(batch_hash(batch))
                     original_rows = idx.shape[0]
                     idx, docs, targets = _trim_unscored_rows(idx, docs, targets,
-                        enabled=not norms and cfg.model.dropout == 0,
+                        enabled=not norms and not taper.enabled and cfg.model.dropout == 0,
                         bucket_rows=cfg.train.compile and not norms)
                     unscored_rows_omitted += original_rows - idx.shape[0]
                     forward_input_positions += idx.numel()
                 with region('tnlm.transfer'):
                     idx, docs, targets = (x.to(dev) for x in (idx, docs, targets))
+                if taper.enabled:
+                    taper.set_valid_mask((docs >= 0) if taper.collecting else (targets != -100))
                 for norm in norms:
                     norm.collecting = True
                     norm.set_valid_mask(docs >= 0)
@@ -464,12 +477,17 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                     with region('tnlm.forward'), torch.autocast(dev.type, dtype=torch.bfloat16,
                                         enabled=cfg.train.bf16_compute and dev.type == 'cuda'):
                         _, loss, actual_n = forward(idx, doc_ids=docs, targets=targets, reduction='sum')
+                    anchor = taper.anchor()
+                    objective = loss if anchor is None else loss + taper.anchor_lambda * anchor * n
+                    if anchor is not None:
+                        anchor_total += float(anchor.detach()) * n
                     with region('tnlm.validate_loss'):
-                        if int(actual_n) != n or not torch.isfinite(loss):
+                        if int(actual_n) != n or not torch.isfinite(objective):
                             raise FloatingPointError("invalid loss/count; update aborted")
                     with region('tnlm.backward'):
-                        loss.backward()
+                        objective.backward()
                 finally:
+                    taper.set_valid_mask(None)
                     for norm in norms:
                         norm.collecting = False
                         norm.set_valid_mask(None)
@@ -490,6 +508,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                 with region('tnlm.synchronize'):
                     torch.cuda.synchronize(dev)
             progress['steps'] += 1
+            taper.after_step(progress['steps'])
             progress['tokens'] += valid_total
             progress['scheduler_step'] = schedule_step + 1
             completed_new_updates += 1
@@ -513,6 +532,7 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                       "seconds": time.monotonic() - step_start,
                       "run_elapsed_seconds": time.monotonic() - started,
                       "run_billed_usd": (time.monotonic() - started) * rate / 3600}
+            record.update(taper.metrics(anchor_total / valid_total))
             if clipping is not None:
                 record['qk_clip'] = clipping
             if stability is not None:

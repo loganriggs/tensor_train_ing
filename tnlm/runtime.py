@@ -98,6 +98,10 @@ def resume_validator(cfg, *, context_fork=False):
         requested = right['train'].pop('rung_total_tokens')
         if (left['train'].get('schedule') == 'cosine' or right['train'].get('schedule') == 'cosine') and requested != previous:
             raise ValueError('cosine resume must retain the exact original token horizon')
+        if requested != previous and any(
+                side.get('model', {}).get(field) == 'taper'
+                for side in (left, right) for field in ('normalization', 'final_normalization')):
+            raise ValueError('TaperNorm resume must retain the exact original token horizon')
         if requested < previous or left != right:
             raise ValueError('resume config mismatch: only upward token promotion and project execution settings may change')
         return compatibility

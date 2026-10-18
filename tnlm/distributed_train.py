@@ -26,6 +26,7 @@ from torch.distributed.device_mesh import init_device_mesh
 from .checkpoint_plan import checkpoint_retention_policy, checkpoint_storage_plan, pending_milestone_tokens
 from .checkpoint_storage import require_checkpoint_space
 from .optimizer_exposure import update_optimizer_exposure
+from .training_taper import TaperTraining, validate_taper_config
 from .budget import SpendLedger
 from .calibration import _check_lagged_divisor, calibrate_lagged
 from .config import Config
@@ -69,7 +70,14 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
         return validate_schedule(cfg.train.schedule,
             schedule_steps(cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update),
             cooldown_steps=cooldown_steps)
-    _phase('schedule preflight', schedule_preflight)
+    validated_warmup = _phase('schedule preflight', schedule_preflight)
+    def taper_preflight():
+        if validate_taper_config(cfg):
+            endpoint = round(cfg.train.taper_end_fraction * schedule_steps(
+                cfg.train.rung_total_tokens, cfg.train.global_prediction_tokens_per_update))
+            if endpoint <= validated_warmup:
+                raise ValueError('TaperNorm endpoint must be strictly after positive warmup_steps')
+    _phase('Taper policy preflight', taper_preflight)
     if project.get('dry_run', True):
         return {'dry_run': True, 'command': 'distributed_train', 'world_size': world,
                 'run_dir': shared['run_dir'], 'tokens': cfg.train.rung_total_tokens,
@@ -251,6 +259,15 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
         if cooldown_end_tokens is not None:
             progress['distributed_schedule']['cooldown_end_tokens'] = cooldown_end_tokens
         norms = lagged_modules(model)
+        taper = _phase('Taper lifecycle construction', lambda: TaperTraining(
+            model, cfg, total_steps=schedule_steps(cfg.train.rung_total_tokens,
+                cfg.train.global_prediction_tokens_per_update),
+            warmup_steps=progress['warmup_steps'], distributed=True))
+        if taper.enabled:
+            def restore_taper_boundary():
+                taper.before_step(progress['steps'])
+                taper.set_valid_mask(None)
+            _phase('Taper checkpoint boundary', restore_taper_boundary)
         model.train()
         token_limit = (progress['cooldown_start_tokens'] + cooldown_steps * cfg.train.global_prediction_tokens_per_update
                        if cooldown_steps is not None else cfg.train.rung_total_tokens)
@@ -308,6 +325,9 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                 stop_reason = 'token_limit'
                 break
             step_started = time.monotonic()
+            if taper.enabled:
+                _phase('Taper pre-step', lambda: taper.before_step(progress['steps']))
+            local_anchor = 0.
             schedule_step = progress['scheduler_step']
             mult = (lr_multiplier(schedule_step, total_steps, cooldown_steps=cooldown_steps) if cooldown_steps is not None
                     else schedule_multiplier(schedule_step, total_steps, schedule=cfg.train.schedule, warmup_steps=progress['warmup_steps']))
@@ -353,6 +373,8 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                         raise ValueError('no valid prediction targets in global stream')
                     continue
                 empty_rounds = 0
+                if taper.enabled:
+                    taper.set_valid_mask(docs >= 0 if taper.collecting else targets != -100)
                 for norm in norms:
                     norm.collecting = True
                     norm.set_valid_mask(docs >= 0)
@@ -366,8 +388,21 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                         if int(n) != selected or not bool(torch.isfinite(loss)):
                             raise FloatingPointError('invalid collective loss/count')
                     _phase('loss validation', check_loss)
-                    _phase('collective backward', lambda: (loss / wanted).backward())
+                    anchor = _phase('Taper anchor drain', taper.anchor) if taper.enabled else None
+                    objective = loss / wanted
+                    if anchor is not None:
+                        def check_anchor():
+                            if not bool(torch.isfinite(anchor)):
+                                raise FloatingPointError('non-finite collective Taper anchor')
+                        _phase('Taper anchor validation', check_anchor)
+                        objective = objective + taper.anchor_lambda * anchor * (selected / wanted)
+                        local_anchor += float(anchor.detach()) * selected
+                    elif taper.enabled:
+                        # Match the validation collective even on zero-quota ranks.
+                        _phase('Taper anchor validation', lambda: None)
+                    _phase('collective backward', objective.backward)
                 finally:
+                    taper.set_valid_mask(None)
                     for norm in norms:
                         norm.collecting = False
                         norm.set_valid_mask(None)
@@ -383,7 +418,7 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
             optimizer.zero_grad(set_to_none=True)
             if dev.type == 'cuda':
                 torch.cuda.synchronize(dev)
-            values = [local_loss, input_count, discarded]
+            values = [local_loss, input_count, discarded, local_anchor]
             if 'context_fork_exposure' in progress:
                 values.extend([prefix_at_watermark, masked_transition_targets])
             totals = torch.tensor(values, dtype=torch.float64, device=dev)
@@ -393,11 +428,13 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
             progress['steps'] += 1
             progress['tokens'] += accumulated
             progress['scheduler_step'] += 1
+            if taper.enabled:
+                _phase('Taper post-step', lambda: taper.after_step(progress['steps']))
             progress['input_tokens_seen'] += int(totals[1])
             progress['discarded_prediction_targets'] += int(totals[2])
             if 'context_fork_exposure' in progress:
-                progress['context_fork_exposure']['prefix_tokens_at_or_before_watermark'] += int(totals[3])
-                progress['context_fork_exposure']['masked_prediction_targets'] += int(totals[4])
+                progress['context_fork_exposure']['prefix_tokens_at_or_before_watermark'] += int(totals[4])
+                progress['context_fork_exposure']['masked_prediction_targets'] += int(totals[5])
             seconds = max_value(time.monotonic() - step_started)
             slowest = max(slowest, seconds)
             run_elapsed = broadcast(time.monotonic() - started if rank == 0 else None)
@@ -407,6 +444,7 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                       'lr': optimizer.param_groups[0]['lr'],
                       'optimizer_group_lrs': [group['lr'] for group in optimizer.param_groups],
                       'optimizer_exposure': progress['optimizer_exposure'], 'rounds': rounds, 'seconds': seconds}
+            record.update(taper.metrics(float(totals[3]) / accumulated))
             history.append(record)
             _phase('metrics append', lambda: _append_metric(run_dir, record) if rank == 0 else None)
             while pending_milestones and progress['tokens'] >= pending_milestones[0]:

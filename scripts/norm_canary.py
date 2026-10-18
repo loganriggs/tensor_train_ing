@@ -1,7 +1,7 @@
 """CPU end-to-end canary for normalization packages through the real `tnlm train` path.
 
     python scripts/norm_canary.py OUT_DIR [--norms pre_rms lagged taper] [--layers 12] [--d-model 256] [--heads 4]
-                                  [--steps 600] [--lr 1e-3] [--threads 6]
+                                  [--steps 600] [--lr 1e-3] [--threads 6] [--model-set qk_init_scale=0.1 ...]
 
 Trains each package on the 5M-token pilot set (context 64, 512 tokens/update) from `configs/norm_screen/base.yaml`, with
 the warmup the schedule implies (max(100, 1% of steps)), then prints a thinned loss / taper-gate / anchor trace and, for lagged models,
@@ -28,6 +28,8 @@ def main(argv=None):
     ap.add_argument("--heads", type=int, default=4); ap.add_argument("--steps", type=int, default=600)
     ap.add_argument("--lr", type=float, default=1e-3); ap.add_argument("--threads", type=int, default=6)
     ap.add_argument("--base", default=str(ROOT / "configs/norm_screen/base.yaml"))
+    ap.add_argument("--model-set", nargs="*", default=[], metavar="KEY=VALUE",
+                    help="extra model fields, e.g. qk_init_scale=0.1 residual_alpha=0.5 (values parsed as YAML)")
     a = ap.parse_args(argv)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     base = yaml.safe_load(open(a.base))
@@ -38,6 +40,7 @@ def main(argv=None):
         cfg["model"].update(layers=a.layers, d_model=a.d_model, heads=a.heads, d_key=dk, d_value=dk, d_mlp=3 * a.d_model,
                             width_scaling_base=None, normalization=norm,
                             final_normalization=norm if norm in ("lagged", "taper") else "rms")
+        cfg["model"].update({k: yaml.safe_load(v) for k, v in (kv.split("=", 1) for kv in a.model_set)})
         cfg["data"].update(manifest=PILOT, context=64, micro_batch_size=8)
         cfg["evaluation"].update(validation_manifest=PILOT)
         cfg["train"].update(global_prediction_tokens_per_update=512, rung_total_tokens=512 * a.steps, compile=False, lr=a.lr,

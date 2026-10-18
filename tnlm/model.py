@@ -151,6 +151,9 @@ class TensorLM(nn.Module):
             a, m = blk.attn, blk.mlp
             for lin in [a.q1, a.k1, a.v, m.l, m.r] + ([a.q2, a.k2] if hasattr(a, "q2") else []):
                 nn.init.normal_(lin.weight, std=lin.weight.shape[1] ** -0.5)
+            if cfg.qk_init_scale != 1.0:  # scores scale by s^2 per factor, the degree-5 attention output by ~s^4
+                for lin in [a.q1, a.k1] + ([a.q2, a.k2] if hasattr(a, "q2") else []):
+                    lin.weight.mul_(cfg.qk_init_scale)
             depth = cfg.depth_residual_base or cfg.layers  # never both depth conventions
             for lin in (a.o, m.d):
                 nn.init.normal_(lin.weight, std=(2 * depth * lin.weight.shape[1]) ** -0.5)

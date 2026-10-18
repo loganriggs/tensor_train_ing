@@ -548,3 +548,18 @@ def test_full_analyze_runs_in_fp64(pkg, tmp_path):
         batches.append((idx, doc, idx.roll(-1, 1).masked_fill(doc < 0, -100)))
     r = analyze(m, batches, str(tmp_path))
     assert r["operator_class"] in ("N", "P") and "stability" in r
+
+
+def test_qk_init_scale_scales_query_key_init_only():
+    import torch
+    from tnlm.config import ModelConfig
+    from tnlm.model import TensorLM
+    kw = dict(layers=2, d_model=32, heads=2, d_key=16, d_value=16, d_mlp=48, vocab_size=97, padded_vocab=128)
+    torch.manual_seed(0); a = TensorLM(ModelConfig(**kw))
+    torch.manual_seed(0); b = TensorLM(ModelConfig(**kw, qk_init_scale=0.1))
+    for n, p in a.named_parameters():
+        q = dict(b.named_parameters())[n]
+        if any(t in n for t in (".q1.", ".k1.", ".q2.", ".k2.")):
+            torch.testing.assert_close(q, 0.1 * p)
+        else:
+            torch.testing.assert_close(q, p)

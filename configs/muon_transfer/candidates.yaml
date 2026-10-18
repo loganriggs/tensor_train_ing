@@ -1,0 +1,60 @@
+- name: w512muon_lr0.001_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.001
+      seed: 101
+- name: w512muon_lr0.002_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.002
+      seed: 101
+- name: w512muon_lr0.004_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.004
+      seed: 101
+- name: w1024muon_lr0.001_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.001
+      seed: 101
+- name: w1024muon_lr0.002_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.002
+      seed: 101
+- name: w1024muon_lr0.004_s101
+  overrides:
+    model:
+      d_model: 1024
+      heads: 16
+      d_mlp: 3392
+      activation_checkpointing: false
+    train:
+      lr: 0.004
+      seed: 101

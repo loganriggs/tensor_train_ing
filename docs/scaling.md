@@ -525,3 +525,18 @@ polynomial (a constant per branch). Training-time canaries with α = 0.1 are run
 Extrapolated optima at width 512: **~4.7e-4 at 2B tokens, ~3.9e-4 at 10B, ~3.5e-4 at 28B**. The curve is flat near the optimum (±√2 in LR costs
 ≤0.01 at 300M), so the existing base LR 4.5e-4 is within ~0.01 of optimal up to a few B tokens. **For a 28B-token H100 run, use ~3.5e-4 at
 base width 512** (width scaling then applies the ×(512/w)^½ rule), with QK-clip on.
+
+## Muon with spectral width scaling (rec. 9; CPU coordinate check 2026-10-18 11:15)
+`torch.optim.Muon`'s `adjust_lr_fn="spectral_unclamped"` (LR × √(d_out/d_in)) vs our `match_rms_adamw` and AdamW default; widths 128/256/512,
+4 layers, 3 steps (`tnlm.coordcheck.run(..., train_kw=...)`). Log-log slope of the per-step change vs width (0 = width-independent):
+
+| | AdamW default | Muon `match_rms_adamw` | **Muon `spectral_unclamped`** |
+| --- | ---: | ---: | ---: |
+| attention outputs | +0.40…+0.49 | +0.44…+0.55 | **−0.07…−0.01** |
+| MLP outputs | +0.51…+0.53 | +0.55…+0.56 | **0.00…+0.05** |
+| residual stream | +0.50…+0.52 | +0.53…+0.56 | **0.00** |
+| logits | +0.87 | +0.51 | +0.41 |
+
+Spectral Muon makes hidden-layer updates width-independent, so its LR should transfer across width with no √width rule. The logits still drift,
+because the unembedding is on the AdamW side at a fixed LR. A coordinate check measures only early steps, so it's queued for an actual transfer test
+(`configs/muon_transfer`: widths 512/1024 × Muon LR {1e-3, 2e-3, 4e-3}, 50M cooled tokens, QK-clip; CPU end-to-end OK). It runs after the exponent fit.

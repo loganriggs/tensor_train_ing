@@ -81,3 +81,13 @@ def test_depth_scaling_composes_with_width_scaling():
     opt = make_optimizer(m, TrainConfig(lr=1e-3))
     hid = [g for g in opt.param_groups if g["weight_decay"] > 0][0]
     assert abs(hid["lr"] - 1e-3 * 0.5 * 2.0) < 1e-15
+
+
+def test_coordcheck_train_kw_selects_muon_spectral_scaling():
+    from tnlm.coordcheck import run
+    kw = dict(widths=(64, 128), layers=1, steps=1, batch=2, context=16, vocab=256, device="cpu", optimizer="muon")
+    a = run(lr=1e-3, **kw)
+    b = run(lr=1e-3, train_kw={"muon_adjust_lr": "spectral_unclamped"}, **kw)
+    # same seed and data; only the Muon LR rule differs, so the hidden updates must differ
+    assert a["rows"][128]["resid0"]["delta"] != b["rows"][128]["resid0"]["delta"]
+    assert a["loglog_slopes"]["resid0.delta"] > b["loglog_slopes"]["resid0.delta"]

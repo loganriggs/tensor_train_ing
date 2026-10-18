@@ -44,7 +44,8 @@ def _batch(g, batch, context, vocab, task):
 
 
 def run(widths=(256, 512, 1024), *, layers=4, head_dim=64, steps=3, lr=4.5e-4, optimizer="adamw",
-        batch=8, context=256, vocab=8192, device="cuda", seed=0, task="random", **model_kw) -> dict:
+        batch=8, context=256, vocab=8192, device="cuda", seed=0, task="random", train_kw=None, **model_kw) -> dict:
+    """train_kw: extra TrainConfig fields (e.g. {"muon_adjust_lr": "spectral_unclamped"})."""
     rows = {}
     for w in widths:
         torch.manual_seed(seed)
@@ -53,7 +54,7 @@ def run(widths=(256, 512, 1024), *, layers=4, head_dim=64, steps=3, lr=4.5e-4, o
         cfg = ModelConfig(layers=layers, d_model=w, heads=w // head_dim, d_key=head_dim, d_value=head_dim, d_mlp=d_mlp,
                           vocab_size=vocab, padded_vocab=vocab, **{k: v for k, v in model_kw.items() if k != "d_mlp"})
         m = TensorLM(cfg).to(device).train()
-        opt = make_optimizer(m, TrainConfig(optimizer=optimizer, lr=lr))
+        opt = make_optimizer(m, TrainConfig(optimizer=optimizer, lr=lr, **(train_kw or {})))
         g = torch.Generator(device="cpu").manual_seed(seed + 1)
         probe = _batch(g, batch, context, vocab, task).to(device)
         init = _probe(m, probe)

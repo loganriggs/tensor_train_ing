@@ -1,0 +1,50 @@
+# Muon with spectral sqrt(d_out/d_in) LR scaling (scaling_review rec. 9; CPU coordinate check 2026-10-18: hidden update slopes ~0 vs
+# +0.5 for AdamW/match_rms_adamw). Does the optimal Muon LR transfer 512 -> 1024 with NO width correction? Non-hidden params use AdamW
+# at aux_adamw_lr (fixed; the logit slope +0.41 is not corrected here). Same data/protocol as exponent_fit, with QK-clip.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: false
+  spend_ledger: /workspace/tensor_train_ing/runs/muon_transfer/spend.json
+  stage: C
+  gpu_hourly_rate_usd: 0.4219
+  milestone_tokens: []
+  keep_recovery_checkpoints: 0
+  save_initial_checkpoint: false
+model:
+  layers: 12
+  d_model: 512
+  heads: 8
+  d_key: 64
+  d_value: 64
+  d_mlp: 1664
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  loss_chunk_tokens: 4096
+  activation_checkpointing: false
+  width_scaling_base: null
+data:
+  manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  context: 512
+  micro_batch_size: 16
+evaluation:
+  validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  seed: 0
+train:
+  qk_clip_tau: 100.0
+  qk_clip_every_steps: 50
+  deterministic: false
+  optimizer: muon
+  lr: 0.00045
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 50003968
+  schedule: constant_with_separate_cooldown
+  cooldown_fraction: 0.1
+  compile: true
+  seed: 101
+  stability_every_steps: 500
+  muon_adjust_lr: spectral_unclamped
+  aux_adamw_lr: 0.00045

@@ -12,7 +12,7 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | QK-clip τ=100, every 50 steps | **Adopted** in `configs/{confirm_500m,pilot_1b,pilot_3b,funded_7b,funded_32b}.yaml` | Rescues divergence (5.657 → 4.966), free when idle (−0.002 / −0.004) |
 | Depth scaling (CompleteP, `depth_residual_base: 12`) | Verified at 24 layers only | Joint 24×1024 sweep; ≥48 layers untested |
 | LR vs token horizon | **Done (09:39 Oct 18):** LR_opt ∝ D^−0.10; use ~3.5e-4 base LR (at width 512) for a 28B-token run | docs/scaling.md "LR vs token horizon" |
-| Global batch size (critical batch) | **Queued** (`runs/critical_batch/run.sh`) | Matters most on 8+ GPUs (large global batch) |
+| Global batch size (critical batch) | **Done (15:59 Oct 18):** no penalty to ≥128k tokens/update; scale LR ≤ √(batch ratio) | docs/scaling.md "Critical batch size" |
 | **Normalization package** (6 options; brief §1, never run) | **Queued next** (`configs/norm_screen`, 18 runs, ~4.5 h): runs before the batch/exponent experiments, which assume `pre_rms` | If `lagged` (fully polynomial) is close, that's the headline interpretability result |
 | Width exponent (is ½ right?) | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |
 | Behaviour at a compute-optimal horizon | **Not yet tested**: all runs ≤ 300M tokens | Plan: 100M model × ~2B tokens here (~8 h) before the rental |

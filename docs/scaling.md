@@ -571,3 +571,16 @@ Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).
 - Caveats: one seed and one checkpoint per package, and 2 probe batches. `norm_cost_table.py` now also reports per-token scalars (group_rms: 97 vs 25).
   **`spectral_rms` drops QK-clip** (incompatible), so it needs a 1B high-LR stability check (the seed that diverged under `pre_rms`) before
   it can replace `pre_rms` in the H100 recipe.
+
+## Critical batch size (rec. 5; `runs/critical_batch/run.sh`; 12×1024 width-scaled ~300M, branched from the 50M-token parent to 100M tokens, uncooled; 15:59 Oct 18)
+| batch (tokens/update) | LR ×1 | LR ×2 | LR ×4 |
+| --- | ---: | ---: | ---: |
+| 8k (current default) | 4.480 | | |
+| 32k | **4.367** | 4.453 | |
+| 128k | | **4.412** | 4.503 |
+
+- **No large-batch penalty up to ≥128k tokens** at this point in training: 32k at the same LR is 0.11 better than 8k, and 128k at ×2 LR is 0.07 better.
+- **The best LR does not scale linearly with batch**: at 32k, ×1 beats ×2, and at 128k, ×2 beats ×4. That's closer to square-root (or weaker) scaling than to the linear rule.
+- **Caveat**: these are *uncooled* endpoints. Smaller batches carry more gradient noise at constant LR, which shows up as higher uncooled loss and
+  shrinks after a cooldown, so this overstates the large-batch gain. The robust conclusion: the critical batch is ≥ 32k–128k tokens.
+- **For the H100 run**: an 8-GPU global batch of ~128k–256k tokens is safe; scale LR by at most √(batch ratio) (×2 for 4×, ×~1.4 per 2×), not linearly.

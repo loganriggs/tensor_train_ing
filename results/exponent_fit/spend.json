@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/exponent_fit/v1/w512ws_lr0.00032_s101/w512ws_lr0.00032_s101/parent": {
+      "status": "running",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 5.56908,
+      "spent_usd": 0.0,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime"
+    }
+  }
+}

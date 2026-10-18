@@ -106,3 +106,17 @@ def test_analysis_folds_frozen_taper_exactly_and_refuses_mixed_gate():
     n.gate.fill_(0.0)
     torch.testing.assert_close(x * gain(n, 8, x.device), n(x))
     assert "fixed diagonal" in norm_scope(n)
+
+
+@pytest.mark.parametrize("package", __import__("tnlm.config", fromlist=["NORM_PACKAGES"]).NORM_PACKAGES)
+def test_every_norm_package_is_known_to_analysis(package):
+    """Structural guard: adding a package (or norm class) must also teach analysis.gain/norm_scope about it."""
+    from tnlm.analysis import gain, norm_scope
+    final = package if package in ("lagged", "taper") else "rms"
+    m = TensorLM(ModelConfig(**TINY, normalization=package, final_normalization=final)).double()
+    norms = [mod for mod in m.modules() if hasattr(mod, "weight") and mod.weight.ndim == 1 and "Norm" in type(mod).__name__
+             or type(mod).__name__ in ("LaggedRMS", "TaperRMS")]
+    assert norms, package
+    for n in norms:
+        assert norm_scope(n) != "none", (package, type(n).__name__)
+        assert gain(n, TINY["d_model"], torch.device("cpu")).shape == (TINY["d_model"],)

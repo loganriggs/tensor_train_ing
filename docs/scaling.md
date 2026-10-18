@@ -369,7 +369,9 @@ checks, with probe max |S1·S2| peaking at ~1.7k, well under τ² = 1e4. It's id
 **2×-WD no-clip control (seed 202, LR 1.35e-3; live, 23:40):** diverging *earlier* than at normal WD. Max |S1·S2| is 393k and loss 7.85 at
 step 500, vs 4.9k / 6.35 unclipped at normal WD. **Stronger WD is not a substitute for QK-clip**; the earlier "WD bounds the scores" reading
 (fixed-WD arm, seed 101) does not hold up as a remedy. Divergence at this LR is seed- and trajectory-dependent, and only the explicit clip
-prevented it. Final CE pending.
+prevented it. **Final CE 5.194**: better than the unclipped run (−0.463 paired; it recovered more after diverging) but well behind QK-clip
+(+0.228 vs 4.966). Ranking on the diverging seed: QK-clip 4.966 < 2×-WD 5.194 < unclipped 5.657. **The QK-clip experiment is complete; its
+conclusion stands.**
 
 **Two-seed base-LR result (seed 202 scaled, 09:00): width scaling helps at 1B.** Scaled 1B: 4.564 / 4.565 (seeds 101/202, spread 0.001);
 default 1B: 4.702 / 4.652. Paired scaled − default: **−0.138 / −0.087** (mean −0.11). Both seeds agree in sign, and the scaled arm is far more

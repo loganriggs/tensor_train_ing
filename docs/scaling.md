@@ -593,3 +593,9 @@ Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).
 The optimum is ~7.8e-4 (the screen's top LR was right). Paired vs `pre_rms` at 7.8e-4: **s101 −0.025 [−0.030, −0.022], s202 −0.025 [−0.031, −0.020]**
 (`runs/norm_followup/comparisons/`). It's identical on both seeds and well outside seed noise. Combined with ~3.7× lower ablation distortion,
 **`spectral_rms` is the leading recipe candidate**, pending checklist item (4): 1B stability without QK-clip (`configs/spectral1b`, running now).
+
+### spectral_rms at 1B without QK-clip (`configs/spectral1b`, seed 202 = the seed that diverged; 19:01 Oct 18)
+**LR 1.35e-3 (3× base): 4.609.** Max |S1·S2| stayed 0.8k–1.6k all run (unclipped pre_rms: 887k at step 1000, then 10M). Paired:
+**−1.048 vs unclipped pre_rms** (diverged, 5.657), **−0.358 vs pre_rms + QK-clip** (4.966), and only **+0.044 vs pre_rms at the base LR**
+(4.565). σReparam bounds the attention scores by construction and **turns 3× the base LR from unsafe into nearly free** at 4× width. That's what
+width scaling + QK-clip couldn't do. Base-LR spectral run pending (~20:40), for the like-for-like comparison at the recommended LR.

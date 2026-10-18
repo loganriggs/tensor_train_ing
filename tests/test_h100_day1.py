@@ -192,3 +192,55 @@ def test_canary_launch_budget_passes_actual_ledger_reservation(day1, arguments, 
                           run_budget=float(command[command.index('--run-budget-usd') + 1]),
                           cost_margin_fraction=project.get('cost_margin_fraction', .1), stage='D')
     assert 0 < amount <= budget
+
+
+def test_stage_timeout_kills_sigterm_ignoring_grandchild(day1, tmp_path):
+    import os
+    import signal
+    import time
+    pid_path = tmp_path / 'grandchild.pid'
+    grandchild_code = ('import os, signal, time; from pathlib import Path; '
+                      'signal.signal(signal.SIGTERM, signal.SIG_IGN); '
+                      f'Path({str(pid_path)!r}).write_text(str(os.getpid())); time.sleep(60)')
+    leader_code = ('import subprocess, sys, time; '
+                   f'subprocess.Popen([sys.executable, "-c", {grandchild_code!r}]); time.sleep(60)')
+    grandchild = None
+    try:
+        with pytest.raises(subprocess.TimeoutExpired):
+            day1.run_command([sys.executable, '-c', leader_code], cwd=tmp_path,
+                             env=dict(os.environ), log_path=tmp_path / 'timeout.log', timeout=3.)
+        grandchild = int(pid_path.read_text())
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            status = Path(f'/proc/{grandchild}/stat')
+            if not status.exists() or status.read_text().split()[2] == 'Z':
+                break
+            time.sleep(.02)
+        else:
+            pytest.fail('stage timeout left its SIGTERM-ignoring grandchild running')
+    finally:
+        if grandchild is None and pid_path.exists():
+            grandchild = int(pid_path.read_text())
+        if grandchild is not None:
+            try:
+                os.kill(grandchild, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
+def test_sigterm_records_failure_and_restores_signal_handler(day1, arguments, tmp_path):
+    import os
+    import signal
+    previous = signal.getsignal(signal.SIGTERM)
+    calls = []
+
+    def terminated_runner(command, **kwargs):
+        calls.append(command)
+        os.kill(os.getpid(), signal.SIGTERM)
+        pytest.fail('scoped SIGTERM handler should interrupt the stage')
+
+    report = day1.run(day1.parse_args(arguments), runner=terminated_runner, probe=_probe)
+    assert report['status'] == 'failed' and len(calls) == 1
+    assert 'SIGTERM' in report['error']
+    assert signal.getsignal(signal.SIGTERM) == previous
+    assert json.loads((tmp_path / 'day1/report.json').read_text())['status'] == 'failed'

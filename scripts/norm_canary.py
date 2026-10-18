@@ -6,7 +6,8 @@
 Trains each package on the 5M-token pilot set (context 64, 512 tokens/update) from `configs/norm_screen/base.yaml`, with
 the warmup the schedule implies (max(100, 1% of steps)). Token-denominated settings (lagged_half_life_tokens) are rescaled
 automatically by 512 / base tokens-per-update so they keep their per-update meaning (override with --model-set). Then it prints a thinned loss / taper-gate / anchor trace and, for lagged models,
-the calibrated mean_sq per site. Use before giving any new package GPU time. Promoted from one-off scratch scripts used three times
+the calibrated mean_sq per site. Use before giving any new package GPU time. Each finished package writes OUT/<norm>.done ({"rc", "last"}); check that file,
+not process lists, to see whether a canary is done. Run scripts/poly_init_scan.py first: it catches init blow-ups in ~1 min. Promoted from one-off scratch scripts used three times
 on 2026-10-18; findings in docs/scaling.md ("Polynomial normalization canaries").
 """
 import argparse
@@ -61,7 +62,10 @@ def main(argv=None):
         mpath = out / norm / "metrics.jsonl"
         rows = [json.loads(l) for l in open(mpath)] if mpath.exists() else []
         L = [(x["step"], round(x["loss"], 3), x.get("taper_gate_used"), x.get("taper_anchor")) for x in rows if "loss" in x]
-        print(f"{norm}: rc={r.returncode}" + (f"  error: {r.stderr.strip().splitlines()[-1]}" if r.returncode else ""))
+        print(f"{norm}: rc={r.returncode}" + (f"  error: {r.stderr.strip().splitlines()[-1]}" if r.returncode else ""), flush=True)
+        # status file: check liveness/outcome by reading OUT/<norm>.done, never by pattern-matching processes
+        last = L[-1] if L else None
+        (out / f"{norm}.done").write_text(json.dumps({"rc": r.returncode, "last": last}) + "\n")
         for row in L[::max(1, len(L) // 8)] + L[-1:]:
             print("   step/loss/gate/anchor", row)
         res = out / norm / "result.json"

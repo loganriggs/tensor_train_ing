@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/parent": {
+      "status": "running",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 2.78454,
+      "spent_usd": 0.0,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime"
+    }
+  }
+}

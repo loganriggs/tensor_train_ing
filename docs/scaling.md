@@ -599,3 +599,8 @@ The optimum is ~7.8e-4 (the screen's top LR was right). Paired vs `pre_rms` at 7
 **−1.048 vs unclipped pre_rms** (diverged, 5.657), **−0.358 vs pre_rms + QK-clip** (4.966), and only **+0.044 vs pre_rms at the base LR**
 (4.565). σReparam bounds the attention scores by construction and **turns 3× the base LR from unsafe into nearly free** at 4× width. That's what
 width scaling + QK-clip couldn't do. Base-LR spectral run pending (~20:40), for the like-for-like comparison at the recommended LR.
+
+**Base LR at 1B (20:46):** spectral_rms 4.574 vs pre_rms 4.565, paired **+0.009 [−0.003, +0.017], a tie**. Throughput on this GPU: spectral
+9.4k vs pre_rms 10.6k tok/s (**−11%**, the per-step power iteration). Summary for the recipe decision: equal loss at the recommended LR, a far larger LR
+safety margin (3× base costs 0.044 vs QK-clip's 0.40), 3.7× lower analysis distortion, and 11% slower. Recommendation: `spectral_rms`
+(interpretability + robustness), with the power iteration made sparser to recover throughput. Pending the user's decision; the config switch is prepared.

@@ -671,14 +671,26 @@
       "elapsed_seconds": 74.74096323805861
     },
     "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr4": {
-      "status": "running",
+      "status": "complete",
       "rate_usd_per_hour": 0.4219,
-      "reserved_usd": 2.78454,
-      "spent_usd": 0.0,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.14823757265431262,
       "parent_checkpoint": "/workspace/tensor_train_ing/runs/confirmation/v3/w1024ws_lr0.00045_s101/w1024ws_lr0.00045_s101/parent/final",
       "cost_margin_fraction": 0.1,
       "stage": "C",
-      "kind": "runtime"
+      "kind": "runtime",
+      "elapsed_seconds": 1264.8856637959834
+    },
+    "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr4/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.008739708529955174,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/critical_batch/v1/b128k_lr4/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 74.57442689698655
     }
   }
 }

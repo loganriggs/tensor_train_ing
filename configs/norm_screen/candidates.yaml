@@ -1,3 +1,6 @@
+# lagged arms removed 03:50 Oct 18: at 12x512 on real data the lagged model gives a non-finite loss on step 1 (polynomial attention
+# outliers dominate the shared divisor; see docs/scaling.md 'Polynomial normalization canaries'). They return once a fixed variant passes
+# scripts/norm_canary.py. Removing them also keeps a step-1 failure from halting the queue.
 - name: pre_rms_lr0.00026_s101
   overrides:
     model:
@@ -109,27 +112,3 @@
       seed: 101
       qk_clip_tau: 0.0
       qk_clip_every_steps: 0
-- name: lagged_lr0.00026_s101
-  overrides:
-    model:
-      normalization: lagged
-      final_normalization: lagged
-    train:
-      lr: 0.00026
-      seed: 101
-- name: lagged_lr0.00045_s101
-  overrides:
-    model:
-      normalization: lagged
-      final_normalization: lagged
-    train:
-      lr: 0.00045
-      seed: 101
-- name: lagged_lr0.00078_s101
-  overrides:
-    model:
-      normalization: lagged
-      final_normalization: lagged
-    train:
-      lr: 0.00078
-      seed: 101

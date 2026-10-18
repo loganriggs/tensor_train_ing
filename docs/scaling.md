@@ -471,3 +471,23 @@ as are the 4 width-scaled parents (for continuation). The deleted controls can b
 _Retention note (00:45 Oct 17):_ to keep the 1B sweep from hitting disk admission overnight, the remaining confirmation cooled finals were
 deleted except those cited in analyses (w1024ws_lr0.00045_s202, and w1024 / w1024ws at lr1.35e-3 s101) and the 4 width-scaled
 parents. All evaluations, comparisons and stability numbers are retained.
+
+## Polynomial normalization canaries (2026-10-18, CPU, `scripts/norm_canary.py`)
+Goal: an exactly polynomial model at inference (user requirement). Both polynomial-at-inference packages fail at 12 layers with the current
+init and degree-5 (no-softmax) attention:
+
+| 12 layers, real FineWeb text, 600 steps | width 64 (1 head) | width 256 (4 heads) | width 512 (8 heads, screen shape) |
+| --- | --- | --- | --- |
+| `pre_rms` | trains (10.8 → 6.87) | trains (→ 6.77) | (screen) |
+| `taper` (All-Taper, λ=0.1) | **diverges** (non-finite) at gate 0.70 | **diverges** at gate 0.80 | not run |
+| `lagged` | **no learning** (loss = ln V, grad 5e-10) | **no learning** | **non-finite loss on step 1** |
+
+**Mechanism (from the calibration record):** the per-site mean square is ~1 through layer 3's MLP input, then **jumps to 6·10⁹ right after
+layer 3's attention**, and reaches ~10¹⁸ by the final norm. Without a softmax, a few token pairs with very large scores (e.g. repeated tokens)
+produce huge attention outputs. `pre_rms` divides each token by its own RMS and absorbs them. A shared (lagged/frozen) divisor is set by the
+outliers and crushes every typical token to ~0 (zero logits, zero gradient). Random-token tests miss this: random tokens rarely repeat
+(random-id init at width 512 gave a healthy mean square of 2.0). **This is a real obstacle for the polynomial family, not a bug.**
+Lagged arms were removed from the GPU norm screen. Candidate fixes to test with the canary before any GPU time:
+(1) start attention near zero (ReZero-style small residual branch scales or small Q/K init), so scores grow only as learned;
+(2) QK-clip during calibration and from step 1; (3) attention-output normalization (one denominator per head; class N, but cheaper
+than per-site RMS); (4) a stronger TaperNorm anchor / longer taper window.

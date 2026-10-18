@@ -4,7 +4,8 @@
                                   [--steps 600] [--lr 1e-3] [--threads 6] [--model-set qk_init_scale=0.1 ...]
 
 Trains each package on the 5M-token pilot set (context 64, 512 tokens/update) from `configs/norm_screen/base.yaml`, with
-the warmup the schedule implies (max(100, 1% of steps)), then prints a thinned loss / taper-gate / anchor trace and, for lagged models,
+the warmup the schedule implies (max(100, 1% of steps)). Lagged statistics use a half-life in *tokens*, so at the canary's 512
+tokens/update pass `--model-set lagged_half_life_tokens=62500` to match the GPU screen's ~122-update half-life. Then it prints a thinned loss / taper-gate / anchor trace and, for lagged models,
 the calibrated mean_sq per site. Use before giving any new package GPU time. Promoted from one-off scratch scripts used three times
 on 2026-10-18; findings in docs/scaling.md ("Polynomial normalization canaries").
 """
@@ -30,6 +31,7 @@ def main(argv=None):
     ap.add_argument("--base", default=str(ROOT / "configs/norm_screen/base.yaml"))
     ap.add_argument("--model-set", nargs="*", default=[], metavar="KEY=VALUE",
                     help="extra model fields, e.g. qk_init_scale=0.1 residual_alpha=0.5 (values parsed as YAML)")
+    ap.add_argument("--train-set", nargs="*", default=[], metavar="KEY=VALUE", help="extra train fields, e.g. taper_anchor_lambda=1.0")
     a = ap.parse_args(argv)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     base = yaml.safe_load(open(a.base))
@@ -45,6 +47,7 @@ def main(argv=None):
         cfg["evaluation"].update(validation_manifest=PILOT)
         cfg["train"].update(global_prediction_tokens_per_update=512, rung_total_tokens=512 * a.steps, compile=False, lr=a.lr,
                             stability_every_steps=50, qk_clip_every_steps=10)
+        cfg["train"].update({k: yaml.safe_load(v) for k, v in (kv.split("=", 1) for kv in a.train_set)})
         if norm == "spectral_rms":
             cfg["train"].update(qk_clip_tau=0.0, qk_clip_every_steps=0)
         p = out / f"{norm}.yaml"; yaml.safe_dump(cfg, open(p, "w"), sort_keys=False)

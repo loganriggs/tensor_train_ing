@@ -1,0 +1,10 @@
+- name: w2048spec_lr0.00045_s101
+  overrides:
+    train:
+      lr: 0.00045
+      seed: 101
+- name: w2048spec_lr0.00135_s101
+  overrides:
+    train:
+      lr: 0.00135
+      seed: 101

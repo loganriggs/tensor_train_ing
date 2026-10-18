@@ -122,3 +122,19 @@ def test_run_queue_passes_keep_list_and_count(tmp_path):
                        capture_output=True, text=True, env={**__import__("os").environ, "RUN_CANDIDATES": str(fake)})
     assert r.returncode == 0, r.stdout + r.stderr
     assert "ARGS exp=norm_screen min=40000 keep=[a_s1 b_s1] max=21600 dev=cuda" in r.stdout
+
+
+def test_poly_init_scan_reads_tokens_like_the_trainer():
+    """Regression for 2026-10-18: reading int32 token files as uint16 interleaved token 0 ('!') and corrupted a diagnosis."""
+    import numpy as np
+    import re
+    src = (ROOT / "scripts/poly_init_scan.py").read_text()
+    m = re.search(r'np\.fromfile\(ROOT / "(data/[^"]+)", dtype="([^"]+)"\)', src)
+    assert m, "poly_init_scan must read tokens with an explicit dtype"
+    path, dtype = ROOT / m.group(1), m.group(2)
+    if not path.exists():
+        pytest.skip("pilot data not present")
+    ours = np.fromfile(path, dtype=dtype)
+    trainer = np.memmap(path, dtype="<i4", mode="r")  # tnlm.data.PackedSampler's token dtype
+    assert ours.shape == trainer.shape and np.array_equal(ours, trainer)
+    assert (ours == 0).mean() < 0.01  # no interleaved zeros

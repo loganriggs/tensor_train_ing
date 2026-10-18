@@ -311,7 +311,21 @@
     "required_additional_bytes": 39941684676,
     "scope": "advisory max of cumulative newly retained initial/final estimates plus active candidate full peaks; already-completed stages excluded; no existing reclamation credit; non-checkpoint metadata allowance/exclusions inherit checkpoint plans"
   },
-  "prune_operations": {},
+  "prune_operations": {
+    "w2048spec_lr0.00135_s202": {
+      "files": {
+        "w2048spec_lr0.00135_s202/parent/milestone-000045003571/state.pt": {
+          "artifact": "milestone-000045003571/state.pt",
+          "bytes": 12101946649,
+          "sha256": "044d6325bbb009a9e730f8c73af2f66230a331160e91af5885e46217e833732e",
+          "stage": "w2048spec_lr0.00135_s202/parent"
+        }
+      },
+      "original_payload_bytes": 12101946649,
+      "scope": "only completed direct milestone/recovery state.pt payloads; manifests/provenance preserved",
+      "status": "complete"
+    }
+  },
   "required_additional_bytes": 39941684676,
   "reservation_cap_based_usd": 11.370205000000002,
   "retention_forecast": {
@@ -333,8 +347,123 @@
   "runtime_cap_cost_scope": "rate times declared per-stage time caps, not guaranteed upper bound: steps/checkpoints may overrun; ledger actuals authoritative",
   "scope": "full configured schedule plus separately billed optional cooldown/evaluation; constant parents permit continuation, cosine horizon is fixed; no final test",
   "stages": {
+    "summary": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 427,
+          "sha256": "b621bbfbbd1caa318d12acfbd99c052c9a2625ee4697bc532ad8e27624c9c835"
+        },
+        "comparison.csv": {
+          "bytes": 1866,
+          "sha256": "0ef6fd59edb2dca05763d9f1469b548a871b04de7e50fba85130448100a223a4"
+        },
+        "comparison.json": {
+          "bytes": 457226,
+          "sha256": "9ccfffd1604855aa23884a1f1fb000e03ab79c1ad2736571634c4351094c75e2"
+        },
+        "loss-vs-cost.svg": {
+          "bytes": 77052,
+          "sha256": "3df100ac037dd55d7fe81daca32dec8a3041621d9495a9eeba3a6afa31b20758"
+        },
+        "loss-vs-time.svg": {
+          "bytes": 76833,
+          "sha256": "f1c7a3bb85aff958fa1f88aa057674bfe8459260e8b54a896b8dc1f0a88d67df"
+        },
+        "loss-vs-tokens.svg": {
+          "bytes": 76083,
+          "sha256": "8be6fdfd736bdb79f1c92ea08cb4b4d60182802e8181a27513668dc241de9f29"
+        },
+        "validation.json": {
+          "bytes": 878,
+          "sha256": "328cb4ed645b8036cf5c591cb7ec906918da03b64281e13bc8298807aa2c72a1"
+        }
+      },
+      "billing": null,
+      "result": {
+        "artifacts": [
+          "comparison.csv",
+          "comparison.json",
+          "loss-vs-cost.svg",
+          "loss-vs-time.svg",
+          "loss-vs-tokens.svg"
+        ],
+        "cost_scope": "per run segment, includes setup/compilation/checkpoints; parent cost not silently combined",
+        "metric": "training cross entropy; not held-out model quality",
+        "output": "/workspace/tensor_train_ing/runs/spectral1b/v1/w2048spec_lr0.00135_s202/summary",
+        "runs": 2
+      },
+      "status": "complete"
+    },
     "w2048spec_lr0.00135_s202/cooldown": {
-      "status": "running"
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 325,
+          "sha256": "0c66d935f19d90e8a8774518da35d83c4afda302e7c183cf362979bfc5dbf584"
+        },
+        "checkpoint_storage_plan.json": {
+          "bytes": 2073,
+          "sha256": "b3df168f4cb1ab5615a95e9cc7742faba4c82119660fff3c5a035339fa09b798"
+        },
+        "final/manifest.json": {
+          "bytes": 698,
+          "sha256": "3a5a2715cca6a92214958dfd60ac0def0b6c920d04958d2665a63161479fc164"
+        },
+        "final/state.pt": {
+          "bytes": 12101947033,
+          "sha256": "ffad410e1b4d4f7b7986400f9e58df6d592670961bac11719140992285514882"
+        },
+        "metrics.jsonl": {
+          "bytes": 7991742,
+          "sha256": "10799b8fb1c9a2ab4152a1dbb7256c06a775d2e01b320a26a56e3ba08f44d39a"
+        },
+        "result.json": {
+          "bytes": 26131225,
+          "sha256": "c139697a1f16cc6cc1f2507128edc4721033d27190e0d9bd0abb6dffb0de09e4"
+        }
+      },
+      "billing": {
+        "ledger": "/workspace/tensor_train_ing/runs/spectral1b/spend.json",
+        "run_id": "/workspace/tensor_train_ing/runs/spectral1b/v1/w2048spec_lr0.00135_s202/w2048spec_lr0.00135_s202/cooldown",
+        "spent_usd": 0.06866377176350495
+      },
+      "result": {
+        "manifest_sha256": "3a5a2715cca6a92214958dfd60ac0def0b6c920d04958d2665a63161479fc164",
+        "path": "/workspace/tensor_train_ing/runs/spectral1b/v1/w2048spec_lr0.00135_s202/w2048spec_lr0.00135_s202/cooldown/final",
+        "state_sha256": "ffad410e1b4d4f7b7986400f9e58df6d592670961bac11719140992285514882",
+        "tokens": 50003968
+      },
+      "status": "complete"
+    },
+    "w2048spec_lr0.00135_s202/evaluation": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 553,
+          "sha256": "c1b133daea9e6eb5006c0372fd3acc51f2e380db9f4df403577ab4fdb4d2deea"
+        },
+        "data-overlap-audit.json": {
+          "bytes": 857,
+          "sha256": "2ca3e09d45838684d43390a837803b6ab222a0d39c54e2e829f258f3df086a99"
+        },
+        "evaluation.json": {
+          "bytes": 524938,
+          "sha256": "cb2b7ee1e93b80b81485ee9b0d65add423eab3b97484ef14246ec1ca81d3da23"
+        }
+      },
+      "billing": {
+        "ledger": "/workspace/tensor_train_ing/runs/spectral1b/spend.json",
+        "run_id": "/workspace/tensor_train_ing/runs/spectral1b/v1/w2048spec_lr0.00135_s202/w2048spec_lr0.00135_s202/evaluation",
+        "spent_usd": 0.03164466259564537
+      },
+      "result": {
+        "available_prefix_plan_sha256": "532e717ac17ff1c98d2c25555fa3316ab3e8900fead8b9b109704f921e2a82cb",
+        "ce": 4.608524598601813,
+        "checkpoint_manifest_sha256": "3a5a2715cca6a92214958dfd60ac0def0b6c920d04958d2665a63161479fc164",
+        "checkpoint_state_sha256": "ffad410e1b4d4f7b7986400f9e58df6d592670961bac11719140992285514882",
+        "prediction_tokens": 1000000,
+        "target_plan_sha256": "23b00110ce29f527ef6905a7abe746bb62faf8398487bea5c7fd86d335100650",
+        "validation_manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5"
+      },
+      "status": "complete"
     },
     "w2048spec_lr0.00135_s202/parent": {
       "artifacts": {
@@ -714,6 +843,6 @@
       "status": "complete"
     }
   },
-  "status": "running",
+  "status": "complete",
   "training_exposure_scope": "cooldown repeats the suffix from the 90% branch in addition to the full parent trajectory"
 }

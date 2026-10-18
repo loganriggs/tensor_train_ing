@@ -41,6 +41,8 @@ train:
   qk_clip_every_steps: 50
   deterministic: false   # true only for bitwise-replay references / interpretability-critical reruns (-14% throughput)
   optimizer: adamw
+  # Base LR at width 512; width scaling applies (512/w)^0.5. Set it for the chosen rung_total_tokens D with the measured horizon rule
+  # LR_opt(D) ~= 5.7e-4 * (D / 3e8)^-0.10 (docs/scaling.md "LR vs token horizon"): ~4.7e-4 at 2B, ~3.9e-4 at 10B, ~3.5e-4 at 28B.
   lr: 0.00045
   global_prediction_tokens_per_update: 1048576
   rung_total_tokens: REQUIRED

@@ -8,8 +8,8 @@ import yaml
 
 MLP_KINDS = ("bilinear", "affine_bilinear", "swiglu")
 ATTN_KINDS = ("signed_product", "offset_square", "lower_degree_mix", "softmax")
-NORM_PACKAGES = ("pre_rms", "branch_rms", "sandwich_rms", "group_rms", "spectral_rms", "lagged")
-FINAL_NORMS = ("rms", "lagged")
+NORM_PACKAGES = ("pre_rms", "branch_rms", "sandwich_rms", "group_rms", "spectral_rms", "lagged", "taper")
+FINAL_NORMS = ("rms", "lagged", "taper")
 
 
 @dataclass
@@ -37,6 +37,8 @@ class ModelConfig:
     residual_alpha: float = 1.0
     # lagged scaling (only used by the lagged package / lagged final norm)
     lagged_half_life_tokens: float = 1.0e6
+    # TaperNorm (package / final norm "taper"; arXiv 2602.10408): EMA rate of the warmup calibration statistics
+    taper_ema_rate: float = 0.01
     # offset-square initial offset b
     offset_square_b: float = 1.0
     # fp32 score computation in the reference attention
@@ -78,7 +80,12 @@ class ModelConfig:
         if self.normalization == "lagged" and self.final_normalization != "lagged":
             # Brief §3: a P package must freeze every activation norm, including the final one.
             raise ValueError("lagged package requires final_normalization: lagged (else label it N)")
+        if self.normalization == "taper" and self.final_normalization != "taper":
+            # All-Taper: only tapering the final norm too makes the frozen model exactly polynomial (arXiv 2602.10408).
+            raise ValueError("taper package requires final_normalization: taper (else the final RMSNorm stays input-dependent)")
         assert self.attention_backend in ("reference", "triton", "auto"), self.attention_backend
+        if self.activation_checkpointing and "taper" in (self.normalization, self.final_normalization):
+            raise ValueError("activation checkpointing would double-count TaperNorm statistics and anchor terms")
         if self.activation_checkpointing and "lagged" in (self.normalization, self.final_normalization):
             raise ValueError("activation checkpointing would double-count lagged statistics")
         if self.qk_norm:
@@ -108,6 +115,10 @@ class TrainConfig:
     deterministic: bool = False
     # log tnlm.analysis.stability_stats on a fixed train probe row every N updates into metrics.jsonl (0 = off)
     stability_every_steps: int = 0
+    # TaperNorm schedule (taper norms only): calibrate during warmup, freeze at warmup end, cosine-decay the shared gate
+    # 1 -> 0 until taper_end_fraction of the run's optimizer steps; add taper_anchor_lambda * mean (r - s_tgt)^2 to the loss.
+    taper_anchor_lambda: float = 0.1
+    taper_end_fraction: float = 1.0
     # QK-clip (tnlm.qk_clip): every N optimizer steps, rescale any head whose probe max |S| exceeds tau (0 = off)
     qk_clip_tau: float = 0.0
     qk_clip_every_steps: int = 0

@@ -20,6 +20,7 @@ PACKAGES = {
     "group_rms": ("group", None, False),
     "spectral_rms": ("rms", None, True),
     "lagged": ("lagged", None, False),
+    "taper": ("taper", None, False),
 }
 CLASS_ORDER = {"P": 0, "N": 1, "G": 2}
 

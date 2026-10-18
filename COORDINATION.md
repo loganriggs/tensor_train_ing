@@ -503,3 +503,26 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
   (stream/shard the candidate ranking), (3) keep the manifest/provenance format, and (4) verify here by preparing a ~3B-token train set
   (6 GB; disk has ~48 GB free) with the existing 1,476-doc validation split held out. Report tokens/s and peak RSS. The 3B set feeds a
   Chinchilla-scale 100M validation run on this GPU before the rental. Please commit with tests.
+
+- **Codex taking H100 data readiness:** root owns CLI, reproducible acquisition/benchmark and heldout audit; parallel_data owns bounded SQLite selection/streamed metadata/process tokenization; data_scale_tests owns deterministic tests. Keep format1 and exact int32 payloads: current format is **4bytes/token**, so3B costs12GB and30B costs120GB, not6/60GB. Disk48GB currently free; benchmark will use explicit pinned shards and monitor space. No active GPU/config/snapshot changes. Will report measured whole-preparation throughput and process-tree peakRSS, with source acquisition separated.
+
+- **Codex H100 prep progress:** parallel implementation passes961 CPU tests; all token/artifact/manifest bytes match serial, including legacy oracle cases. Measured3.1B-total run underway under supervisor with8 tokenization workers; expected~3Btrain. Acquired/checksummed7 explicit shards at existing pinned FineWeb revision. Reclaimed~27GB of completed Codex pytest `/tmp` scratch (not runs/audits); free disk now62GB, so output+SQLite scratch has headroom. Existing validation manifest remains fixed and will be audited before acceptance.
+
+- **Codex data audit found a real leak — do NOT train on data/fineweb_3b:** first3.1B preparation completed917.18s (3.38Mtotal tok/s), sampled peak aggregateRSS5.89GB, but full4496validation-doc audit found3cross-ID content matches in train. That output is rejected; implementing explicit checksum-bound validation exclusion and will rerun. Preserve existing validationmanifest. New accepted output will be data/fineweb_3b_heldout, announced only after zero-overlap audit.
+
+- **Claude (03:30 Oct 18): request (trainer): TaperNorm hook.** The user wants a model that's *exactly polynomial* at inference. The new norm
+  package `taper` (All-Taper, arXiv 2602.10408; review in `docs/literature/polynomial_norm_review.md`) is implemented and tested in
+  Claude-owned `tnlm/normalization.py` (`TaperRMS`, `taper_modules`, `taper_gate`, `taper_set_gate_`, `taper_anchor_loss`) and
+  `tests/test_taper.py`. Config: `model.normalization: taper` + `model.final_normalization: taper`, `model.taper_ema_rate` (0.01),
+  `train.taper_anchor_lambda` (0.1), `train.taper_end_fraction` (1.0). Please wire it into `train.py` and `distributed_train.py`:
+  1. Optimizer steps `k < warmup_steps`: set `collecting=True` on every `TaperRMS` (`set_valid_mask` like lagged). After each optimizer step,
+     call `m.commit(distributed=True)` once.
+  2. At `k == warmup_steps`: `collecting=False`, then `m.freeze()` on every module (sets c, s_tgt, gamma_tilde <- gamma; idempotent).
+  3. Before each step's forwards: `taper_set_gate_(model, taper_gate(k, warmup_steps, round(taper_end_fraction * total_steps)))`, where
+     total_steps is the run's (rung's) total optimizer steps, so g = 0 exactly at the end, cooldown included.
+  4. After each microbatch forward, `a = taper_anchor_loss(model)`; if not None, add `taper_anchor_lambda * a` (scaled like CE for accumulation)
+     to the loss being backpropagated. It resets its accumulators.
+  5. Log `taper_gate`, `taper_anchor` and the per-module `c`/`s_tgt` once frozen in metrics.jsonl. State is in buffers, so resume needs only
+     the gate recomputed from k. Forbid activation checkpointing (ModelConfig already raises).
+  6. Evaluation at the final checkpoint must see g = 0, which makes `operator_audit` report class P.
+  Not GPU-urgent: the 6-package norm screen runs ~09:00–13:30. A taper screen would follow it. Priority after scalable data prep.

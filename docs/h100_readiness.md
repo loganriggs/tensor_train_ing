@@ -88,3 +88,8 @@ Shared read-only mmap index (40 bytes/document, prebuilt at prep time) replaces 
 **0.55 GB (was 11.6 GB)**, cached startup 9.8 s (was 65 s), identical batches/lineage/state, near-end seek+restore 0.06 s. Report:
 `docs/datasets/compact_sampler.md`. 30B / 8×H100 RSS is projected (~linear in documents: ~0.4 GB of index per 10B tokens, shared), measure on day 1.
 Scalable prep verified at 3B: 2.7M tokens/s, 5.9 GB peak RSS with 8 workers (`docs/datasets/parallel_preparation.md`), so 28B ≈ 3 h on 8 workers.
+
+### Decision (user, 11:00 Oct 18)
+The H100 run uses **`pre_rms`** (the only normalization proven stable to 1B with this attention) plus width scaling, QK-clip, the LR-horizon rule
+and sparse checkpoints. The fully polynomial normalization is a **separate research track**, not a blocker: every polynomial option diverges in
+training at 12 layers (docs/scaling.md "Polynomial normalization canaries"). The norm screen's analysis-cost table will quantify what `pre_rms` costs.

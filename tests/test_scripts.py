@@ -113,3 +113,12 @@ def test_make_pairs_resolves_absolute_and_refuses_missing(tmp_path):
     with pytest.raises(SystemExit):
         mp.main([str(tmp_path / "bad.yaml"), "x=exp/v1/a,exp/v2/b"], runs=runs)
     assert not (tmp_path / "bad.yaml").exists()
+
+
+def test_run_queue_passes_keep_list_and_count(tmp_path):
+    fake = tmp_path / "fake.sh"
+    fake.write_text('#!/bin/bash\necho "ARGS exp=$1 min=$2 keep=[$3] max=$4 dev=$5"\n'); fake.chmod(0o755)
+    r = subprocess.run(["bash", str(ROOT / "scripts/run_queue.sh"), "0", "norm_screen:40000:21600:a_s1,b_s1"],
+                       capture_output=True, text=True, env={**__import__("os").environ, "RUN_CANDIDATES": str(fake)})
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "ARGS exp=norm_screen min=40000 keep=[a_s1 b_s1] max=21600 dev=cuda" in r.stdout

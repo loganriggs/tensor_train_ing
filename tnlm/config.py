@@ -38,6 +38,10 @@ class ModelConfig:
     # Multiplier on the Q/K init std (1.0 = brief §5 init). Small values start polynomial attention near zero, so huge-score
     # token pairs can't dominate input-independent normalizers at init (see docs/scaling.md "Polynomial normalization canaries").
     qk_init_scale: float = 1.0
+    # Polynomial attention row scale n_visible^-p (None = brief §6 default: 0.5 signed, 1.0 offset_square). p = 1 is the visible-position
+    # *average*: bounded even when many keys score coherently (e.g. a context of repeated tokens), where p = 0.5 still grows like sqrt(n).
+    # Position-only, so the model stays exactly polynomial.
+    attn_row_power: float | None = None
     # lagged scaling (only used by the lagged package / lagged final norm)
     lagged_half_life_tokens: float = 1.0e6
     # TaperNorm (package / final norm "taper"; arXiv 2602.10408): EMA rate of the warmup calibration statistics

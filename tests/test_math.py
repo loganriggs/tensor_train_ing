@@ -563,3 +563,26 @@ def test_qk_init_scale_scales_query_key_init_only():
             torch.testing.assert_close(q, 0.1 * p)
         else:
             torch.testing.assert_close(q, p)
+
+
+def test_attn_row_power_one_bounds_coherent_contexts():
+    """Repeated-key contexts: under n^-1/2 the attention output grows with context length n; under n^-1 (the average) it does not."""
+    import torch
+    from tnlm.config import ModelConfig
+    from tnlm.model import TensorLM
+    kw = dict(layers=1, d_model=32, heads=2, d_key=16, d_value=16, d_mlp=48, vocab_size=97, padded_vocab=128, attention_backend="reference")
+    out = {}
+    for p in (None, 1.0):
+        torch.manual_seed(0)
+        m = TensorLM(ModelConfig(**kw, attn_row_power=p)).double().eval()
+        assert m.blocks[0].attn.row_power == (0.5 if p is None else 1.0)
+        a = {}
+        h = m.blocks[0].attn.register_forward_hook(lambda mod, i, o: a.__setitem__("y", o))
+        for T in (16, 256):
+            idx = torch.full((1, T), 7)  # one token repeated: every key matches coherently
+            m(idx, torch.zeros_like(idx))
+            out[(p, T)] = float(a["y"][0, -1].norm())
+        h.remove()
+    for T in (16, 256):  # one layer, same weights and input: only the last row's position factor differs
+        assert abs(out[(1.0, T)] - out[(None, T)] * T ** -0.5) < 1e-9 * out[(None, T)]
+    assert out[(None, 256)] > out[(None, 16)] and out[(1.0, 256)] < out[(1.0, 16)]  # grows with n vs not

@@ -43,7 +43,8 @@ class Attention(nn.Module):
             self.b = nn.Parameter(torch.full((H,), cfg.offset_square_b))
         if self.kind == "lower_degree_mix":
             self.coef = nn.Parameter(torch.tensor([[0.0, 0.0, 0.0, 1.0]]).repeat(H, 1))
-        self.row_power = 1.0 if self.kind == "offset_square" else 0.5
+        default = 1.0 if self.kind == "offset_square" else 0.5
+        self.row_power = default if cfg.attn_row_power is None else cfg.attn_row_power
 
     @property
     def op_class(self):
@@ -204,13 +205,16 @@ class TensorLM(nn.Module):
             # n_visible = doc position + 1 for contiguous documents; padding rows get scale 0
             n = (pos + 1).float()
             valid = doc_ids >= 0
-            ctx["row_scale"] = {p: torch.where(valid, n.pow(-p), torch.zeros_like(n)) for p in (0.5, 1.0)}
+            ctx["row_scale"] = {p: torch.where(valid, n.pow(-p), torch.zeros_like(n)) for p in self._row_powers()}
         elif ctx["backend"] != "flex":  # dense reference paths only; fast paths never build a T x T mask
             vis = visible_mask(doc_ids)
             ctx["visible"] = vis
             if self.cfg.attention != "softmax":
-                ctx["C"] = {p: row_scale_mask(vis, p) for p in (0.5, 1.0)}
+                ctx["C"] = {p: row_scale_mask(vis, p) for p in self._row_powers()}
         return ctx
+
+    def _row_powers(self) -> tuple:
+        return tuple(sorted({0.5, 1.0} | ({self.cfg.attn_row_power} if self.cfg.attn_row_power is not None else set())))
 
     def forward(self, idx, doc_ids=None, targets=None, reduction="mean"):
         ctx = self.make_ctx(idx, doc_ids)

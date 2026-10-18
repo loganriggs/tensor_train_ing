@@ -75,6 +75,9 @@ NVIDIA Academic Hardware Grant (AI-safety track, interpretability prioritized), 
 Open Philanthropy / Coefficient Giving, LTFF, UK AISI grants, MATS, university-cluster collaborations. The project's pitch is
 interpretability: an exactly polynomial LM, with the 1B results and a ~$500 1.4B run as proof that it works.
 
-### Checkpoint retention gap (found 02:30, Claude fixing)
+### Checkpoint retention gap (found 02:30; **fixed 02:45**)
 With default `milestone_tokens`, a 28B-token run retains **286** full checkpoints (~17 GB each, ~4.7 TB). The scale-up configs need an explicit
 sparse milestone list plus rolling recovery checkpoints.
+**Fix:** `configs/{pilot_1b,pilot_3b,funded_7b,funded_32b}.yaml` now set log-spaced `milestone_tokens` (1B, 2B, 4B, … 512B) and
+`keep_recovery_checkpoints: 2`. Permanent states: 5 / 6 / 8 / 10 milestones (+ initial, branch, final) for the four Chinchilla runs, i.e.
+~8 states × 17 GB ≈ 140 GB for the 1.4B run instead of ~4.7 TB.

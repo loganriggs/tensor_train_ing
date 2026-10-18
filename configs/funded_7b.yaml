@@ -11,6 +11,11 @@ project:
   spend_ledger: runs/funded_7b/spend.json
   stage: D
   gpu_hourly_rate_usd: REQUIRED_ACTUAL_RATE
+  # Long-run retention (2026-10-18): the default keeps a full state every 100M tokens forever (286 states, ~4.7 TB, for a 28B-token
+  # 1.4B run). Instead: log-spaced permanent milestones (entries past the run length are ignored) plus the final and 90% branch
+  # states, and 2 rolling time-based recovery states for crash resume.
+  milestone_tokens: [1000000000, 2000000000, 4000000000, 8000000000, 16000000000, 32000000000, 64000000000, 128000000000, 256000000000, 512000000000]
+  keep_recovery_checkpoints: 2
 model:
   layers: 32
   d_model: 4096

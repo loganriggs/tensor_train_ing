@@ -34,6 +34,10 @@ evaluation:
   validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
   seed: 0
 train:
+  # QK-clip adopted as the scale-up default (2026-10-17 23:30). Idle at <= base LR at 1B; prevents high-LR divergence that would
+  # otherwise corrupt the optimum-LR fit. Existing 4.5e-4/1.35e-3 seed-101 points: clip changes them by -0.002/-0.004.
+  qk_clip_tau: 100.0
+  qk_clip_every_steps: 50
   deterministic: false
   optimizer: adamw
   lr: 0.00045

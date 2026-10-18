@@ -93,3 +93,9 @@ Scalable prep verified at 3B: 2.7M tokens/s, 5.9 GB peak RSS with 8 workers (`do
 The H100 run uses **`pre_rms`** (the only normalization proven stable to 1B with this attention) plus width scaling, QK-clip, the LR-horizon rule
 and sparse checkpoints. The fully polynomial normalization is a **separate research track**, not a blocker: every polynomial option diverges in
 training at 12 layers (docs/scaling.md "Polynomial normalization canaries"). The norm screen's analysis-cost table will quantify what `pre_rms` costs.
+
+### Recipe-change checklist (adopted 14:50 Oct 18)
+Before a component replaces part of the H100 recipe, test in one queue rebuild: (1) loss at the 100M screen with ≥2 seeds; (2) LR optimum
+(not at the edge of the grid); (3) compatibility with the other recipe parts (QK-clip, width scaling, compile/kernels); (4) 1B stability on the
+seed and LR that diverged before (w2048, seed 202, LR 1.35e-3); (5) analysis cost (`scripts/analyze_kept_finals.sh`). Current candidate:
+`spectral_rms`, with (1)–(2) in `configs/norm_followup` and (3)–(4) in `configs/spectral1b`.

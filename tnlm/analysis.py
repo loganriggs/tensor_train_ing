@@ -19,7 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .model import TensorLM
-from .normalization import (GroupRMSNorm, LaggedRMS, RMSNorm, SpectralLinear, DynamicNorm, dynamic_norms, upcast)
+from .normalization import (GroupRMSNorm, LaggedRMS, RMSNorm, SpectralLinear, DynamicNorm, TaperRMS, dynamic_norms, upcast)
 
 QUANTILES = (0.01, 0.05, 0.5, 0.95, 0.99)
 POS_BUCKETS = ((0, 16), (16, 64), (64, 256), (256, 1 << 30))
@@ -36,7 +36,16 @@ def gain(norm: nn.Module, d: int, device) -> torch.Tensor:
 
     RMSNorm/GroupRMSNorm: the gain only (their denominators are dynamic and reported separately).
     LaggedRMS: gain / sqrt(mean_sq + eps), because the frozen divisor is a constant and folding it makes exported
-    read vectors and local tensors invariant to the exact gauge g -> c g, mean_sq -> c^2 (mean_sq + eps) - eps."""
+    read vectors and local tensors invariant to the exact gauge g -> c g, mean_sq -> c^2 (mean_sq + eps) - eps.
+    TaperRMS: at gate 1 it is an RMSNorm (gain only); frozen at gate 0 it is the fixed map c * gamma_tilde. A gate strictly
+    between 0 and 1 mixes a dynamic and a fixed branch and has no single foldable map, so it is refused."""
+    if isinstance(norm, TaperRMS):
+        g_ = float(norm.gate)
+        if g_ == 1.0:
+            return upcast(norm.weight.detach())
+        if g_ == 0.0 and bool(norm.frozen):
+            return float(norm.c) * upcast(norm.weight_tilde.detach())
+        raise ValueError(f"TaperRMS at gate {g_} (frozen={bool(norm.frozen)}) has no fixed foldable map")
     w = getattr(norm, "weight", None)
     if w is None:
         return torch.ones(d, device=device)
@@ -53,6 +62,10 @@ def norm_scope(norm: nn.Module) -> str:
         return "per-token RMS over all features"
     if isinstance(norm, LaggedRMS):
         return "frozen scalar (constant at checkpoint)"
+    if isinstance(norm, TaperRMS):
+        if bool(norm.frozen) and float(norm.gate) == 0.0:
+            return "fixed diagonal scale c*gamma_tilde (tapered; constant at checkpoint)"
+        return f"per-token RMS, taper gate {float(norm.gate):g}"
     return "none"
 
 
@@ -564,7 +577,7 @@ def analyze(model: TensorLM, batches, out_dir: str, rw_layer_window: int | None 
         result = {
             "operator_class": audit["class"],
             "normalizer_scopes": {n: norm_scope(m) for n, m in model.named_modules()
-                                  if isinstance(m, (RMSNorm, GroupRMSNorm, LaggedRMS))},
+                                  if isinstance(m, (RMSNorm, GroupRMSNorm, LaggedRMS, TaperRMS))},
             "local_tensor": local_tensor_check(model, hidden),
         }
         rw_agg, (rw_summary, rw_edges) = read_write_graph(model, layer_window=rw_layer_window)

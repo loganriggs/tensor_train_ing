@@ -89,3 +89,20 @@ def test_gate_schedule():
 def test_freeze_without_statistics_raises():
     with pytest.raises(RuntimeError):
         TaperRMS(4).freeze()
+
+
+def test_analysis_folds_frozen_taper_exactly_and_refuses_mixed_gate():
+    from tnlm.analysis import gain, norm_scope
+    torch.manual_seed(2)
+    n = TaperRMS(8).double()
+    x = torch.randn(4, 8, dtype=torch.float64)
+    assert norm_scope(n).startswith("per-token RMS")
+    n.collecting = True; n(x); n.commit(distributed=False); n.collecting = False; n.freeze()
+    with torch.no_grad():
+        n.weight_tilde.uniform_(0.5, 1.5)
+    n.eval(); n.gate.fill_(0.5)
+    with pytest.raises(ValueError):
+        gain(n, 8, x.device)
+    n.gate.fill_(0.0)
+    torch.testing.assert_close(x * gain(n, 8, x.device), n(x))
+    assert "fixed diagonal" in norm_scope(n)

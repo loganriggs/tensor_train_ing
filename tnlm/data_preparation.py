@@ -8,6 +8,8 @@ import multiprocessing
 
 import numpy as np
 
+from .token_format import TOKEN_DTYPE
+
 _TOKENIZER = None
 
 
@@ -27,7 +29,7 @@ def _encode_batch(batch, tokenizer=None):
         wide_tokens = np.asarray(encoded, dtype='<i8')
         if len(wide_tokens) and (wide_tokens.min() < 0 or wide_tokens.max() >= 50257):
             raise ValueError('tokens must belong to the real GPT2 vocabulary')
-        tokens = wide_tokens.astype('<i4')
+        tokens = wide_tokens.astype(TOKEN_DTYPE)
         result.append((doc_id, source_offset, content_hash, rank,
                        hashlib.sha256(processed.encode('utf-8')).hexdigest(), tokens))
     return result

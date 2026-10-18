@@ -15,6 +15,8 @@ import tempfile
 
 import numpy as np
 
+from .token_format import TOKEN_DTYPE
+
 SPLITS = ('train', 'val', 'test', 'calibration')
 INDEX_NAME = '.sampler-index-v1'
 INDEX_DTYPE = np.dtype([(field, '<i8') for field in
@@ -58,7 +60,7 @@ def _validate_manifest(root, manifest):
     if not required.issubset(manifest.get('artifacts', {})):
         raise ValueError('dataset manifest lacks required metadata/token artifacts')
     for split, count in counts.items():
-        if (root/f'{split}.tokens.bin').stat().st_size != count * 4:
+        if (root/f'{split}.tokens.bin').stat().st_size != count * np.dtype(TOKEN_DTYPE).itemsize:
             raise ValueError(f'token payload size mismatch: {split}')
     return counts
 

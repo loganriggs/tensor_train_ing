@@ -18,8 +18,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .token_format import TOKEN_DTYPE, SPLIT_ORDER, read_split_tokens
 
-SPLIT_ORDER = ('train', 'val', 'test', 'calibration')
 PACKING_VERSION = 'document-shuffle-row-overlap-incremental-v2'
 
 
@@ -326,7 +326,7 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
                 start = offsets[split]
                 tokens.tofile(streams[split])
                 if eos_included:
-                    streams[split].write(tokenizer.eot_token.to_bytes(4, 'little'))
+                    streams[split].write(np.asarray([tokenizer.eot_token], dtype=TOKEN_DTYPE).tobytes())
                 offsets[split] += token_count
                 doc = {'id': doc_id, 'numeric_id': document_count, 'split': split,
                        'selection_sha256': rank,
@@ -455,13 +455,13 @@ class PackedSampler:
         if set(counts) != set(SPLIT_ORDER) or any(type(n) is not int or n < 0 for n in counts.values()):
             raise ValueError('invalid dataset token counts')
         for name, count in counts.items():
-            if (root / f'{name}.tokens.bin').stat().st_size != count * 4:
+            if (root / f'{name}.tokens.bin').stat().st_size != count * np.dtype(TOKEN_DTYPE).itemsize:
                 raise ValueError(f'token payload size mismatch: {name}')
         from .sampler_index import load_sampler_index
         self.docs = load_sampler_index(root, self.manifest, split)
         if not self.docs:
             raise ValueError(f'empty split: {split}')
-        self.tokens = np.memmap(root / f'{split}.tokens.bin', dtype='<i4', mode='r')
+        self.tokens = read_split_tokens(root, split)
         self.packing_version = PACKING_VERSION
         self.epoch = self.cursor = 0
         self._order()

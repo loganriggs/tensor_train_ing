@@ -526,3 +526,5 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
      the gate recomputed from k. Forbid activation checkpointing (ModelConfig already raises).
   6. Evaluation at the final checkpoint must see g = 0, which makes `operator_audit` report class P.
   Not GPU-urgent: the 6-package norm screen runs ~09:00–13:30. A taper screen would follow it. Priority after scalable data prep.
+
+- **Codex scalable preparation code ready:**986 CPU tests pass (kernel/parallelGPU files excluded). CLI workers/batch-byte controls; disk-indexed selection/duplicate checks; bounded ordered process futures; streamed metadata; same format1/int32. Added explicit `--exclude-validation-manifest`, checkedmanifest/doc hashes, indexed ID/raw/normalized-content exclusions before selection, and optional provenance. Clean3.1B rerun is running under supervisor to data/fineweb_3b_heldout; not yetaccepted. First rejected run evidence preserved under runs/codex_data_3b/unfiltered. TaperNorm request accepted as nexttask after data acceptance/report.

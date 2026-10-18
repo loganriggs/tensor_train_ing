@@ -6,7 +6,6 @@ row-local, and document fragments retain original token offsets in documents.jso
 from __future__ import annotations
 
 import hashlib
-import heapq
 import sqlite3
 import importlib.metadata
 import json
@@ -105,19 +104,67 @@ def _json(path, value):
     Path(path).write_text(json.dumps(value, sort_keys=True, indent=2) + '\n')
 
 
+def _load_heldout_exclusion(ledger, manifest):
+    """Authenticate and stream the fixed validation identity into an indexed ledger."""
+    path = Path(manifest)
+    if path.is_dir():
+        path /= 'manifest.json'
+    identity = manifest_hash(path)
+    info = json.loads(path.read_text())
+    documents = path.with_name('documents.jsonl')
+    expected = info.get('artifacts', {}).get('documents.jsonl')
+    if not isinstance(expected, str) or _sha(documents) != expected:
+        raise ValueError('heldout documents artifact checksum mismatch')
+    ledger.execute('CREATE TABLE heldout (kind TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(kind, value)) WITHOUT ROWID')
+    count = 0
+    with documents.open() as stream:
+        for line in stream:
+            row = json.loads(line)
+            if row.get('split') != 'val':
+                continue
+            if not isinstance(row.get('id'), str):
+                raise ValueError('heldout validation document requires string ID')
+            for name in ('content_sha256', 'processed_sha256'):
+                value = row.get(name)
+                if (not isinstance(value, str) or len(value) != 64
+                        or any(c not in '0123456789abcdef' for c in value)):
+                    raise ValueError('heldout validation document requires content fingerprints')
+            ledger.executemany('INSERT OR IGNORE INTO heldout VALUES (?, ?)',
+                               [('id', row['id']), ('raw', row['content_sha256']),
+                                ('processed', row['processed_sha256'])])
+            count += 1
+            if count % 8192 == 0:
+                ledger.commit()
+    if not count:
+        raise ValueError('heldout manifest has no validation documents')
+    if _sha(documents) != expected or manifest_hash(path) != identity:
+        raise ValueError('heldout validation metadata changed during reading')
+    ledger.commit()
+    return {'manifest_sha256': identity, 'documents_sha256': expected,
+            'validation_documents': count, 'excluded_unique_documents': 0,
+            'rule': 'exclude every source document matching a fixed validation ID, raw content SHA256, or CRLF/CR-to-LF processed content SHA256, before selection and from all output splits'}
+
+
 def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
                  max_documents=100_000, tokenizer=None, split_fractions=None,
-                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None):
+                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None,
+                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None):
     """Freeze bounded documents. HF mode requires a full commit and explicit shards.
 
     Local revisions are user-supplied labels supplemented by source SHA256. Tokens
     map to source document token offsets, not character offsets (BPE may split bytes).
     Existing output directories are rejected to prevent accidental replacement.
     """
+    if type(workers) is not int or workers < 1:
+        raise ValueError('workers must be a positive integer')
+    if type(tokenization_batch_bytes) is not int or tokenization_batch_bytes < 1:
+        raise ValueError('tokenization_batch_bytes must be a positive integer')
+    if tokenizer is not None and workers != 1:
+        raise ValueError('injected test tokenizers require workers=1')
     if not revision or revision in ('main', 'master', 'latest'):
         raise ValueError('an immutable source revision is required')
-    if max_tokens <= 0 or max_documents <= 0:
-        raise ValueError('positive data bounds required')
+    if any(type(value) is not int or value <= 0 for value in (max_tokens, max_documents)):
+        raise ValueError('positive integer data bounds required')
     if (source_jsonl is None) == (hf_dataset is None):
         raise ValueError('specify exactly one local JSONL or HF dataset')
     fractions = {'train': .97, 'val': .01, 'test': .01, 'calibration': .01} if split_fractions is None else split_fractions
@@ -181,22 +228,38 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
             import pyarrow.parquet as pq
             for shard, path in verified:
                 row = 0
-                for batch in pq.ParquetFile(path).iter_batches(batch_size=256):
+                parquet = pq.ParquetFile(path)
+                schema = getattr(parquet, 'schema_arrow', None)
+                projection = ({'columns': [name for name in ('text', 'id', 'doc_id')
+                                           if name in schema.names]}
+                              if schema is not None else {})
+                for batch in parquet.iter_batches(batch_size=256, **projection):
                     for record in batch.to_pylist():
                         yield record, {'shard': shard, 'row': row}
                         row += 1
                 if _sha(path) != hf_shard_checksums[shard].lower():
                     raise ValueError(f'HF raw shard changed during reading: {shard}')
     out = Path(output_dir)
-    # The declared source universe is fully scanned. The heap stores only the K
-    # smallest domain-separated ID hashes; text and duplicate detection use disk.
-    candidates = []
+    # Both duplicate detection and ranked membership live on disk: increasing
+    # max_documents must not grow a Python heap or document metadata list.
+    selected_count = 0
+    worst_rank = None
     scan_records = unique_documents = 0
     ledger_path = out / '.seen.sqlite'
     ledger = sqlite3.connect(ledger_path)
+    ledger.execute('PRAGMA cache_size=-32768')
+    ledger.execute('PRAGMA temp_store=FILE')
     ledger.execute('CREATE TABLE seen (id TEXT PRIMARY KEY, content_hash TEXT NOT NULL)')
-    ledger.execute('CREATE TABLE candidates (id TEXT PRIMARY KEY, text TEXT NOT NULL, source_offset TEXT NOT NULL, content_hash TEXT NOT NULL)')
+    ledger.execute('CREATE TABLE candidates (id TEXT PRIMARY KEY, text TEXT NOT NULL, source_offset TEXT NOT NULL, content_hash TEXT NOT NULL, rank TEXT NOT NULL)')
+    ledger.execute('CREATE INDEX candidate_rank ON candidates(rank DESC, id ASC)')
+    streams = {}
+    tokenized = None
+    total = document_count = 0
+    offsets = dict.fromkeys(fractions, 0)
+    heldout_exclusion = None
     try:
+        if exclude_validation_manifest is not None:
+            heldout_exclusion = _load_heldout_exclusion(ledger, exclude_validation_manifest)
         for record, source_offset in records():
             scan_records += 1
             text = record.get('text')
@@ -212,73 +275,85 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
                 continue
             ledger.execute('INSERT INTO seen VALUES (?, ?)', (doc_id, content_hash))
             unique_documents += 1
-            rank = int(_digest('selection\0' + doc_id), 16)
-            candidate = (-rank, doc_id)
-            retain = len(candidates) < max_documents or rank < -candidates[0][0]
+            if unique_documents % 8192 == 0:
+                ledger.commit()
+            if heldout_exclusion is not None:
+                processed_hash = (_digest(text.replace('\r\n', '\n').replace('\r', '\n'))
+                                  if '\r' in text else content_hash)
+                match = ledger.execute(
+                    "SELECT 1 FROM heldout WHERE (kind='id' AND value=?) OR "
+                    "(kind='raw' AND value=?) OR (kind='processed' AND value=?) LIMIT 1",
+                    (doc_id, content_hash, processed_hash)).fetchone()
+                if match:
+                    heldout_exclusion['excluded_unique_documents'] += 1
+                    continue
+            rank = _digest('selection\0' + doc_id)
+            retain = selected_count < max_documents or rank < worst_rank
             if retain:
-                if len(candidates) == max_documents:
-                    evicted = heapq.heapreplace(candidates, candidate)
-                    ledger.execute('DELETE FROM candidates WHERE id=?', (evicted[1],))
+                if selected_count == max_documents:
+                    # Match the legacy heap tie-break: evict the smallest ID
+                    # among the largest ranks; equal ranks do not replace.
+                    ledger.execute('DELETE FROM candidates WHERE id=(SELECT id FROM candidates ORDER BY rank DESC, id ASC LIMIT 1)')
                 else:
-                    heapq.heappush(candidates, candidate)
-                ledger.execute('INSERT INTO candidates VALUES (?, ?, ?, ?)',
-                               (doc_id, text, json.dumps(source_offset), content_hash))
+                    selected_count += 1
+                ledger.execute('INSERT INTO candidates VALUES (?, ?, ?, ?, ?)',
+                               (doc_id, text, json.dumps(source_offset), content_hash, rank))
+                if selected_count == max_documents:
+                    worst_rank = ledger.execute('SELECT rank FROM candidates ORDER BY rank DESC, id ASC LIMIT 1').fetchone()[0]
+        ledger.commit()
         if source_jsonl is not None and _sha(source_jsonl) != source['sha256']:
             raise ValueError('local source changed during preparation')
-    except BaseException:
-        ledger.close()
-        raise
-    docs, total = [], 0
-    streams = {split: (out / f'{split}.tokens.bin').open('wb') for split in fractions}
-    offsets = dict.fromkeys(fractions, 0)
-    try:
-        for negative_rank, doc_id in sorted(candidates, key=lambda c: (-c[0], c[1])):
-            if total >= max_tokens:
-                break
-            text, serialized_offset, content_hash = ledger.execute(
-                'SELECT text, source_offset, content_hash FROM candidates WHERE id=?', (doc_id,)).fetchone()
-            source_offset = json.loads(serialized_offset)
-            processed = text.replace('\r\n', '\n').replace('\r', '\n')
-            encoded = tokenizer.encode(processed, allowed_special=set(), disallowed_special=())
-            tokens = (encoded + [tokenizer.eot_token])[:max_tokens - total]
-            if not tokens:
-                continue
-            if min(tokens) < 0 or max(tokens) >= 50257:
-                raise ValueError('tokens must belong to the real GPT2 vocabulary')
-            # Integer thresholds avoid hash-to-float rounding at split boundaries.
-            rank = -negative_rank
-            split_rank = int(_digest(doc_id), 16)
-            cumulative = 0.
-            for split, fraction in fractions.items():
-                cumulative += fraction
-                if split_rank < int(cumulative * 2**256):
+        streams = {split: (out / f'{split}.tokens.bin').open('wb') for split in fractions}
+        from .data_preparation import ordered_tokenization
+        rows = ledger.execute('SELECT id, text, source_offset, content_hash, rank FROM candidates ORDER BY rank ASC, id ASC')
+        tokenized = ordered_tokenization(rows, tokenizer=tokenizer, workers=workers,
+                                         batch_bytes=tokenization_batch_bytes)
+        with (out / 'documents.jsonl').open('w') as metadata:
+            for doc_id, serialized_offset, content_hash, rank, processed_hash, encoded in tokenized:
+                remaining = max_tokens - total
+                encoded_count = len(encoded)
+                eos_included = encoded_count + 1 <= remaining
+                tokens = encoded[:remaining]
+                if len(tokens) and (tokens.min() < 0 or tokens.max() >= 50257):
+                    raise ValueError('tokens must belong to the real GPT2 vocabulary')
+                token_count = len(tokens) + int(eos_included)
+                split_rank = int(_digest(doc_id), 16)
+                cumulative = 0.
+                for split, fraction in fractions.items():
+                    cumulative += fraction
+                    if split_rank < int(cumulative * 2**256):
+                        break
+                start = offsets[split]
+                tokens.tofile(streams[split])
+                if eos_included:
+                    streams[split].write(tokenizer.eot_token.to_bytes(4, 'little'))
+                offsets[split] += token_count
+                doc = {'id': doc_id, 'numeric_id': document_count, 'split': split,
+                       'selection_sha256': rank,
+                       'content_sha256': content_hash, 'processed_sha256': processed_hash,
+                       'source_offset': json.loads(serialized_offset),
+                       'token_start': start, 'token_end': offsets[split],
+                       'source_token_start': 0, 'source_token_end': token_count,
+                       'processed_token_start': 0, 'processed_token_end': min(token_count, encoded_count),
+                       'synthetic_eos_token_offset': encoded_count if eos_included else None,
+                       'truncated': not eos_included}
+                metadata.write(json.dumps(doc, sort_keys=True) + '\n')
+                document_count += 1
+                total += token_count
+                if total >= max_tokens:
                     break
-            start = offsets[split]
-            np.asarray(tokens, dtype='<i4').tofile(streams[split])
-            offsets[split] += len(tokens)
-            eos_included = len(tokens) == len(encoded) + 1
-            docs.append({'id': doc_id, 'numeric_id': len(docs), 'split': split,
-                         'selection_sha256': f'{rank:064x}',
-                         'content_sha256': content_hash, 'processed_sha256': _digest(processed),
-                         'source_offset': source_offset, 'token_start': start, 'token_end': offsets[split],
-                         'source_token_start': 0, 'source_token_end': len(tokens),
-                         'processed_token_start': 0, 'processed_token_end': min(len(tokens), len(encoded)),
-                         'synthetic_eos_token_offset': len(encoded) if eos_included else None,
-                         'truncated': not eos_included})
-            total += len(tokens)
     finally:
+        if tokenized is not None:
+            tokenized.close()
         for stream in streams.values():
             stream.close()
         ledger.close()
         ledger_path.unlink(missing_ok=True)
         Path(str(ledger_path) + '-journal').unlink(missing_ok=True)
-    with (out / 'documents.jsonl').open('w') as f:
-        for doc in docs:
-            f.write(json.dumps(doc, sort_keys=True) + '\n')
     artifacts = {p.name: _sha(p) for p in sorted(out.iterdir()) if p.is_file()}
     manifest = {'format_version': 1, 'source': source, 'tokenizer': tok_meta,
                 'split_fractions': fractions, 'split_order': list(SPLIT_ORDER),
-                'tokens': offsets, 'documents': len(docs),
+                'tokens': offsets, 'documents': document_count,
                 'scan_records': scan_records, 'scan_unique_documents': unique_documents,
                 'max_tokens': max_tokens, 'max_documents': max_documents,
                 'preprocessing': 'CRLF/CR to LF; otherwise unchanged',
@@ -291,6 +366,8 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
                 'token_offset_semantics': 'source_token_* are legacy processed document stream offsets including synthetic EOS; processed_token_* exclude EOS; no original character/byte alignment',
                 'boundary_loss_policy': 'ignore cross-document transitions and padding',
                 'artifacts': artifacts}
+    if heldout_exclusion is not None:
+        manifest['heldout_exclusion'] = heldout_exclusion
     # Sidecar precedes the manifest: manifest presence is the completion marker.
     encoded_manifest = json.dumps(manifest, sort_keys=True, indent=2) + '\n'
     (out / 'manifest.sha256').write_text(_digest(encoded_manifest) + '\n')
@@ -318,13 +395,20 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
 
 def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
                  max_documents=100_000, tokenizer=None, split_fractions=None,
-                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None):
+                 hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None,
+                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None):
     """Prepare an immutable dataset; remove this invocation's output on failure.
 
     HF raw-shard SHA256 values are checked against downloaded pinned files or
     hf_local_shards={declared_path: local_path}. Every declared shard is fully read.
     Output bounds do not bound source scanning/download costs; choose shards first.
-    Injected tokenizers mark test-only data.
+    Injected tokenizers mark test-only data and require workers=1. Parallel GPT2
+    tokenization preserves canonical document order and the exact manifest format.
+    Queue memory is bounded by workers and tokenization_batch_bytes, except that
+    an indivisible document larger than the budget is processed alone. Selection
+    and metadata use disk rather than Python collections proportional to the cap.
+    exclude_validation_manifest optionally excludes matching validation IDs and
+    exact raw/normalized document hashes before selection from every output split.
     Successful publication fsyncs all files and atomically installs the manifest.
     """
     out = Path(output_dir)
@@ -335,7 +419,9 @@ def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_0
                              tokenizer=tokenizer, split_fractions=split_fractions,
                              hf_dataset=hf_dataset, hf_config=hf_config,
                              hf_data_files=hf_data_files, hf_shard_checksums=hf_shard_checksums,
-                             hf_local_shards=hf_local_shards)
+                             hf_local_shards=hf_local_shards, workers=workers,
+                             tokenization_batch_bytes=tokenization_batch_bytes,
+                             exclude_validation_manifest=exclude_validation_manifest)
     except BaseException:
         shutil.rmtree(out)
         raise

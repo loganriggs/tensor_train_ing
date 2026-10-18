@@ -387,6 +387,11 @@ def main(argv=None):
     p.add_argument('--out', required=True)
     p.add_argument('--max-tokens', type=int, default=50_000_000)
     p.add_argument('--max-documents', type=int, default=100_000)
+    p.add_argument('--workers', type=int, default=1, help='deterministic GPT2 tokenizer processes')
+    p.add_argument('--tokenization-batch-bytes', type=int, default=1048576,
+                   help='UTF-8 bytes per queued tokenizer batch; oversized documents run alone')
+    p.add_argument('--exclude-validation-manifest',
+                   help='exclude all IDs and exact content matches of its checksum-verified val documents')
     p = sub.add_parser('prepare_mechanisms')
     p.add_argument('--out', required=True)
     p.add_argument('--seed', type=int, default=0)
@@ -520,7 +525,9 @@ def main(argv=None):
         result = {'manifest': str(prepare_data(args.out, source_jsonl=args.source_jsonl,
                     hf_dataset=args.hf_dataset, hf_config=args.hf_config,
                     hf_data_files=args.hf_data_files, revision=args.revision,
-                    max_tokens=args.max_tokens, max_documents=args.max_documents, **kwargs))}
+                    max_tokens=args.max_tokens, max_documents=args.max_documents,
+                    workers=args.workers, tokenization_batch_bytes=args.tokenization_batch_bytes,
+                    exclude_validation_manifest=args.exclude_validation_manifest, **kwargs))}
     elif args.command == 'prepare_mechanisms':
         from .data import prepare_mechanism_tasks
         result = {'manifest': str(prepare_mechanism_tasks(args.out, seed=args.seed,

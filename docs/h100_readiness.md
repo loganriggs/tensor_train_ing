@@ -98,4 +98,5 @@ training at 12 layers (docs/scaling.md "Polynomial normalization canaries"). The
 Before a component replaces part of the H100 recipe, test in one queue rebuild: (1) loss at the 100M screen with ≥2 seeds; (2) LR optimum
 (not at the edge of the grid); (3) compatibility with the other recipe parts (QK-clip, width scaling, compile/kernels); (4) 1B stability on the
 seed and LR that diverged before (w2048, seed 202, LR 1.35e-3); (5) analysis cost (`scripts/analyze_kept_finals.sh`). Current candidate:
-`spectral_rms`, with (1)–(2) in `configs/norm_followup` and (3)–(4) in `configs/spectral1b`.
+`spectral_rms`: (1) done, −0.025 on 2 seeds; (2) done, optimum 7.8e-4 at width 512; (5) done, 3.7× lower ablation distortion;
+(3)–(4) 1B stability without QK-clip running (`configs/spectral1b`, ~20:40).

@@ -584,3 +584,12 @@ Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).
 - **Caveat**: these are *uncooled* endpoints. Smaller batches carry more gradient noise at constant LR, which shows up as higher uncooled loss and
   shrinks after a cooldown, so this overstates the large-batch gain. The robust conclusion: the critical batch is ≥ 32k–128k tokens.
 - **For the H100 run**: an 8-GPU global batch of ~128k–256k tokens is safe; scale LR by at most √(batch ratio) (×2 for 4×, ×~1.4 per 2×), not linearly.
+
+### Follow-up (`configs/norm_followup`, 17:13 Oct 18): spectral_rms's gain replicates
+| LR | 7.8e-4 | 1.35e-3 | 2.3e-3 |
+| --- | ---: | ---: | ---: |
+| `spectral_rms` s101 | **4.766** | 4.780 | 4.787 |
+
+The optimum is ~7.8e-4 (the screen's top LR was right). Paired vs `pre_rms` at 7.8e-4: **s101 −0.025 [−0.030, −0.022], s202 −0.025 [−0.031, −0.020]**
+(`runs/norm_followup/comparisons/`). It's identical on both seeds and well outside seed noise. Combined with ~3.7× lower ablation distortion,
+**`spectral_rms` is the leading recipe candidate**, pending checklist item (4): 1B stability without QK-clip (`configs/spectral1b`, running now).

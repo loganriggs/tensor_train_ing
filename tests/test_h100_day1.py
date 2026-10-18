@@ -186,7 +186,7 @@ def test_canary_launch_budget_passes_actual_ledger_reservation(day1, arguments, 
     project = yaml.safe_load((tmp_path / 'day1/canary.yaml').read_text())['project']
     ledger = SpendLedger(tmp_path / 'reservation-check.json',
                          total_budget=project['total_budget_usd'], reserve=project['reserve_usd'],
-                         stage_budgets=project.get('stage_budgets_usd'))
+                         stage_budgets=project.get('stage_budgets'))
     amount = ledger.begin('mock-canary', project['gpu_hourly_rate_usd'],
                           float(command[command.index('--max-seconds') + 1]),
                           run_budget=float(command[command.index('--run-budget-usd') + 1]),

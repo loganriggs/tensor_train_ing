@@ -2,6 +2,138 @@
   "version": 1,
   "runs": {
     "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.09275198181976607,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 791.4366782440338
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.009358964619558882,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 79.85843240201939
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.007089815079291474,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00026_s101/pre_rms_lr0.00026_s101/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 60.496170385042205
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00045_s101/pre_rms_lr0.00045_s101/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.08865728476800759,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 756.4973338820273
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00045_s101/pre_rms_lr0.00045_s101/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.009438454882828698,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00045_s101/pre_rms_lr0.00045_s101/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 80.53670912107918
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00045_s101/pre_rms_lr0.00045_s101/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.006603395987671583,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00045_s101/pre_rms_lr0.00045_s101/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 56.34564009390306
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00078_s101/pre_rms_lr0.00078_s101/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.08857551264230414,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 755.799586424022
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00078_s101/pre_rms_lr0.00078_s101/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.009372146313028617,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00078_s101/pre_rms_lr0.00078_s101/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 79.9709095209837
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00078_s101/pre_rms_lr0.00078_s101/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.006658848112517632,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/pre_rms_lr0.00078_s101/pre_rms_lr0.00078_s101/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 56.818803519941866
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00026_s101/branch_rms_lr0.00026_s101/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.09255793111872229,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 789.7808770500124
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00026_s101/branch_rms_lr0.00026_s101/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.009336287233107574,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00026_s101/branch_rms_lr0.00026_s101/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 79.66493017110042
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00026_s101/branch_rms_lr0.00026_s101/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.00673924387338763,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00026_s101/branch_rms_lr0.00026_s101/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 57.50480669399258
+    },
+    "/workspace/tensor_train_ing/runs/norm_screen/v1/branch_rms_lr0.00045_s101/branch_rms_lr0.00045_s101/parent": {
       "status": "running",
       "rate_usd_per_hour": 0.4219,
       "reserved_usd": 2.78454,

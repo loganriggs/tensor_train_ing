@@ -145,3 +145,20 @@ def test_norm_cost_table_metrics(tmp_path):
     n, p = nct.row(str(tmp_path / "n.json")), nct.row(str(tmp_path / "p.json"))
     assert n["sites"] == 2 and n["scalars"] == 2 and n["spread"] == 4.0 and n["radial"] == 0.02 and math.isinf(n["frozen_gap"]) and n["ablation"] == 0.3
     assert p["sites"] == 0 and p["frozen_gap"] == 0.0 and p["ablation"] is None
+
+
+def test_find_orphan_states_lists_only_evaluated_old_states(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import os
+    import time as _t
+    import find_orphan_states as fos
+    runs = tmp_path / "runs"
+    done = runs / "exp/a/a/cooldown/final"; done.mkdir(parents=True); (done / "state.pt").write_bytes(b"x")
+    (runs / "exp/a/a/evaluation").mkdir(); (runs / "exp/a/a/evaluation/evaluation.json").write_text("{}")
+    live = runs / "exp/b/b/parent/final"; live.mkdir(parents=True); (live / "state.pt").write_bytes(b"x")  # no evaluation yet
+    old = _t.time() - 3600
+    for p in (done / "state.pt", live / "state.pt"):
+        os.utime(p, (old, old))
+    found = list(fos.orphans(runs, 30))
+    assert found == [done / "state.pt"]
+    assert list(fos.orphans(runs, 30, keep=["exp/a"])) == []

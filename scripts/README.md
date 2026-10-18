@@ -16,6 +16,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | | `plot_scaling_losses.py` | Training-loss figures for docs/ (Codex) |
 | 4a | `analyze_kept_finals.sh SWEEP TAG CAND...` | CPU `tnlm analyze` of a sweep's kept finals with recorded configs, then the cost table |
 | 4b | `norm_cost_table.py LABEL=analysis.json ...` | Analysis-cost table per normalization package (5 metrics) |
+| 4c | `find_orphan_states.py [--keep ...]` | List checkpoints whose run already has an evaluation (deletion candidates; deletes nothing) |
 | 5 | `export_results.py` | Weight-free mirror of runs/ into git-tracked results/ |
 | | `autocommit_results.sh` | Hourly export, commit and push of results/ (runs in the background) |
 

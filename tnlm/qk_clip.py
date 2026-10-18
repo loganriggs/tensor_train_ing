@@ -27,6 +27,17 @@ def head_score_max(model, idx, doc) -> list[dict]:
 
 
 @torch.no_grad()
+def _rescale_heads_(blk, name: str, gamma: torch.Tensor, d_key: int):
+    """Multiply factor `name` ('S1'/'S2') of each head's scores by gamma (H,): scale its Q and K rows by sqrt(gamma)."""
+    q, k = (blk.attn.q1, blk.attn.k1) if name == "S1" else (blk.attn.q2, blk.attn.k2)
+    rows = gamma.sqrt().repeat_interleave(d_key).to(q.weight.dtype)  # (H*dk,)
+    for lin in (q, k):
+        lin.weight.mul_(rows[:, None])
+        if lin.bias is not None:
+            lin.bias.mul_(rows)
+
+
+@torch.no_grad()
 def qk_clip_(model, idx, doc, tau: float) -> dict:
     """Clip in place. Returns {'clipped_heads': n, 'max_before': float, 'factors': {layer: {S1: [...], S2: [...]}}}."""
     if tau <= 0:
@@ -44,13 +55,7 @@ def qk_clip_(model, idx, doc, tau: float) -> dict:
             worst = max(worst, float(mx.max()))
             gamma = torch.clamp(tau / mx.clamp_min(1e-30), max=1.0)  # (H,)
             if bool((gamma < 1).any()):
-                q = blk.attn.q1 if name == "S1" else blk.attn.q2
-                k = blk.attn.k1 if name == "S1" else blk.attn.k2
-                rows = gamma.sqrt().repeat_interleave(cfg.d_key).to(q.weight.dtype)  # (H*dk,)
-                for lin in (q, k):
-                    lin.weight.mul_(rows[:, None])
-                    if lin.bias is not None:
-                        lin.bias.mul_(rows)
+                _rescale_heads_(blk, name, gamma, cfg.d_key)
                 n += int((gamma < 1).sum())
                 factors.setdefault(i, {})[name] = [float(g) for g in gamma]
     return {"clipped_heads": n, "max_before": worst, "factors": factors, "tau": tau}
@@ -85,12 +90,7 @@ def qk_clip_from_bounds_(model, tau: float) -> dict:
             worst = max(worst, float(bound.max()))
             gamma = torch.clamp(tau / bound.clamp_min(1e-30), max=1.0)
             if bool((gamma < 1).any()):
-                q, k = (blk.attn.q1, blk.attn.k1) if name == "S1" else (blk.attn.q2, blk.attn.k2)
-                rows = gamma.sqrt().repeat_interleave(cfg.d_key).to(q.weight.dtype)
-                for lin in (q, k):
-                    lin.weight.mul_(rows[:, None])
-                    if lin.bias is not None:
-                        lin.bias.mul_(rows)
+                _rescale_heads_(blk, name, gamma, cfg.d_key)
                 n += int((gamma < 1).sum())
                 factors.setdefault(i, {})[name] = [float(g) for g in gamma]
     return {"clipped_heads": n, "max_bound_before": worst, "factors": factors, "tau": tau, "source": "per-batch norm bound"}

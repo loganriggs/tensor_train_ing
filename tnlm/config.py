@@ -129,6 +129,9 @@ class TrainConfig:
     # QK-clip (tnlm.qk_clip): every N optimizer steps, rescale any head whose probe max |S| exceeds tau (0 = off)
     qk_clip_tau: float = 0.0
     qk_clip_every_steps: int = 0
+    # where QK-clip reads max |S|: "probe" (fixed probe row, exact) or "batch_bound" (every training batch, Cauchy-Schwarz upper bound;
+    # tnlm.qk_clip.qk_clip_from_bounds_)
+    qk_clip_source: str = "probe"
     # Muon (optimizer: muon): hidden matrices use torch.optim.Muon at `lr`; the rest AdamW at aux_adamw_lr
     muon_momentum: float = 0.95
     muon_adjust_lr: str = "match_rms_adamw"

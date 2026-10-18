@@ -554,3 +554,20 @@ Four packages are within 0.012 of each other (≈ seed noise at this scale). **`
 optimum is above 7.8e-4 and the true gap may be larger. One seed only. Follow-up queued next (`configs/norm_followup`): spectral at 1.35e-3 and 2.3e-3,
 plus seed 202 for spectral and pre_rms at 7.8e-4. `branch_rms` is the most robust at low LR. `lagged` was removed (diverges; see the canaries).
 Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).
+
+### Analysis cost per package (`runs/norm_screen/cost_table.md`; `tnlm analyze` on CPU, LR-4.5e-4 cooled finals, 2 probe batches)
+| package | sites | denominator spread q99/q01 | radial/direct | frozen-denominator CE gap | ablation distortion (median \|live−clamped\|) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `pre_rms` | 25 | 3.15 | 0.029 | non-finite | 1.64 |
+| `branch_rms` | 25 | 7.95 | 0.030 | non-finite | 0.37 |
+| `sandwich_rms` | 49 | **2.05** | 0.030 | non-finite | **0.29** |
+| `group_rms` | 25 (×4 groups) | 3.34 | **0.080** | non-finite | 2.28 |
+| `spectral_rms` | 25 | 2.40 | 0.030 | non-finite | 0.45 |
+
+- **No class-N package can run on frozen denominators** (all non-finite), so that metric doesn't discriminate among them. Only a class-P model has gap 0.
+- **`spectral_rms` is the best combined choice so far**: the best loss (4.766) *and* ~3.7× less ablation distortion than `pre_rms` (0.45 vs 1.64),
+  with tighter denominators (2.40 vs 3.15). Bounding the weights spectrally seems to make the norms do less compensating.
+- `sandwich_rms` has the least distortion (0.29) but twice the sites (49). `group_rms` costs the most (2.28, and 2.8× the radial coupling).
+- Caveats: one seed and one checkpoint per package, and 2 probe batches. `sites` counts normalizer sites, not scalars (group_rms has 4 per site).
+  **`spectral_rms` drops QK-clip** (incompatible), so it needs a 1B high-LR stability check (the seed that diverged under `pre_rms`) before
+  it can replace `pre_rms` in the H100 recipe.

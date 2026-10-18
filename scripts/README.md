@@ -8,6 +8,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 2 | `run_queue.sh WAIT_PID EXP[:MIN_TOK_S[:MAX_S]] ... \| path.sh` | Run experiments back to back after an optional running job; stops at the first failure |
 | | `run_candidates_v2.sh EXP MIN_TOK_S "KEEP" [MAX_S] [DEVICE]` | One sweep, one candidate at a time, in bounded disk (called by `run_queue.sh`) |
 | 1b | `norm_canary.py OUT [--norms ...] [--layers] [--d-model]` | CPU end-to-end of norm packages via `tnlm train`, before GPU time |
+| 1c | `poly_init_scan.py [--set k=v ...]` | Init-time per-token scale scan of a polynomial (lagged) model on real text |
 | 3 | `stability_watch.sh [SEEN]` | Background alert on an abrupt attention-score blow-up in the live run |
 | | `stability_trace.py metrics.jsonl ...` | Per-log stability table with flags (jump, steady runaway, absolute) |
 | 4 | `make_pairs.py OUT.yaml NAME=LEFT_RUN,RIGHT_RUN ...` | Paired-comparison spec with verified absolute paths |

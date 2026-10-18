@@ -58,3 +58,23 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | funded_7b (6.9B), Chinchilla | 140B | ~4,700 (+~33% if activation checkpointing is needed) | $7.0k / $9.3k / $14k |
 
 MFU is the largest uncertainty (25–45% gives ×1.4–×0.8). The day-1 canary measures it. Recommendation: 1.4B first; decide 7B after its curve.
+
+### Updated costs at October-2026 rates (02:35; same FLOP model; H100 index ~$2.82–2.92/GPU-h, list median ~$4.20, Vast.ai $1.47–3.00)
+| Run | Params | Tokens | H100 GPU-h | ~$2.8 | $2–4.2 | Wall-clock |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 1.4B first look | 1.4B | 10B | ~70 | ~$200 | $140–300 | ~9 h on 8 |
+| 1.4B Chinchilla | 1.4B | 28B | ~190 | ~$530 | $380–800 | ~1 day on 8 |
+| 7B Chinchilla | 6.9B | 140B | 4.7k–6.3k | ~$13–18k | $9k–26k | ~3 days on 64 |
+| 32B Chinchilla | 34B | 690B | 114k–152k | ~$320–425k | $230k–640k | ~19 days on 256; needs multi-node (≥16 GPUs to fit) |
+
+B200 (~2.2× H100 FLOPs) rents at ~$5.9–8.0, so roughly break-even per FLOP; H200 (141 GB) at ~$3.4–5.3 helps 7B memory.
+
+### Compute sources (verify terms directly)
+NAIRR (US institution needed; 3-page proposal; start-up allocations reviewed in ~2 weeks), Google Cloud AI Safety Research Credits (≤$50K),
+NVIDIA Academic Hardware Grant (AI-safety track, interpretability prioritized), Lambda Research Grant (≤$5K). Not verified in searches:
+Open Philanthropy / Coefficient Giving, LTFF, UK AISI grants, MATS, university-cluster collaborations. The project's pitch is
+interpretability: an exactly polynomial LM, with the 1B results and a ~$500 1.4B run as proof that it works.
+
+### Checkpoint retention gap (found 02:30, Claude fixing)
+With default `milestone_tokens`, a 28B-token run retains **286** full checkpoints (~17 GB each, ~4.7 TB). The scale-up configs need an explicit
+sparse milestone list plus rolling recovery checkpoints.

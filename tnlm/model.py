@@ -29,10 +29,20 @@ def _linear(d_in, d_out, spectral, bias=False):
     return SpectralLinear(d_in, d_out, bias) if spectral else nn.Linear(d_in, d_out, bias=bias)
 
 
+@torch.no_grad()
+def score_bound(q: torch.Tensor, k: torch.Tensor, d_key: int) -> torch.Tensor:
+    """Per-head upper bound on max |q_i . k_j| / sqrt(dk) over the whole batch: max_i |q_i| * max_j |k_j| / sqrt(dk) (Cauchy-Schwarz).
+    O(B*T*d), no score matrix; RoPE preserves norms. Never smaller than the true masked maximum, so it is safe for guards."""
+    qn = q.detach().float().norm(dim=-1).amax(dim=(0, 2))  # (H,)
+    kn = k.detach().float().norm(dim=-1).amax(dim=(0, 2))
+    return qn * kn / d_key ** 0.5
+
+
 class Attention(nn.Module):
     def __init__(self, cfg: ModelConfig, spectral: bool):
         super().__init__()
         self.cfg, self.kind = cfg, cfg.attention
+        self.record_score_bound, self.last_score_bound = False, None  # off by default: zero cost
         H, dk, dv, d = cfg.heads, cfg.d_key, cfg.d_value, cfg.d_model
         self.q1, self.k1 = _linear(d, H * dk, spectral), _linear(d, H * dk, spectral)
         if self.kind in ("signed_product", "lower_degree_mix"):
@@ -70,6 +80,9 @@ class Attention(nn.Module):
             if hasattr(self, "q2"):
                 q2 = apply_rope(self._heads(x, self.q2, cfg.d_key), cos, sin)
                 k2 = apply_rope(self._heads(x, self.k2, cfg.d_key), cos, sin)
+            if self.record_score_bound:  # per-batch, backend-independent upper bound on max |S| (tnlm.qk_clip.score_bounds)
+                self.last_score_bound = {name: score_bound(q, k, cfg.d_key)
+                                         for name, q, k in (("S1", q1, k1), ("S2", q2, k2)) if q is not None}
             if ctx["backend"] == "triton":  # scores/products in FP32 inside the kernel; inputs stay in compute dtype
                 from .kernels.poly_attn import poly_attention_triton
                 y = poly_attention_triton(self.kind, q1, k1, q2, k2, v, ctx["doc_ids"], ctx["row_scale"][self.row_power],

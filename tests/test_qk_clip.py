@@ -44,3 +44,26 @@ def test_clip_rejects_spectral():
     m = _model(normalization="spectral_rms")
     with pytest.raises(NotImplementedError):
         qk_clip_(m, torch.zeros(1, 4, dtype=torch.long), torch.zeros(1, 4, dtype=torch.long), 1.0)
+
+
+def test_score_bound_is_an_upper_bound_and_bound_clip_caps_every_score():
+    from tnlm.qk_clip import qk_clip_from_bounds_, score_bounds, set_score_bound_recording
+    m = _model()
+    idx = torch.randint(0, 97, (3, 20)); doc = torch.zeros(3, 20, dtype=torch.long)
+    set_score_bound_recording(m, True)
+    m(idx, doc)
+    bounds = score_bounds(m)
+    for row in range(3):  # bound covers every row of the batch, not just a probe row
+        true = head_score_max(m, idx[row:row + 1], doc[row:row + 1])
+        for b, t in zip(bounds, true):
+            for k in t:
+                assert torch.all(b[k] >= t[k] * (1 - 1e-9))
+    tau = 0.5 * max(float(v.max()) for st in bounds for v in st.values())
+    r = qk_clip_from_bounds_(m, tau)
+    assert r["clipped_heads"] >= 1
+    for row in range(3):
+        after = head_score_max(m, idx[row:row + 1], doc[row:row + 1])
+        assert all(float(v.max()) <= tau * (1 + 1e-6) for st in after[:1] for v in st.values())  # layer 0: same inputs
+    set_score_bound_recording(m, False)
+    m(idx, doc)
+    assert all(not st for st in score_bounds(m))

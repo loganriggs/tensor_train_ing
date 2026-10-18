@@ -561,13 +561,13 @@ Analysis-cost table: `runs/norm_screen/cost_table.md` (CPU, in progress).
 | `pre_rms` | 25 | 3.15 | 0.029 | non-finite | 1.64 |
 | `branch_rms` | 25 | 7.95 | 0.030 | non-finite | 0.37 |
 | `sandwich_rms` | 49 | **2.05** | 0.030 | non-finite | **0.29** |
-| `group_rms` | 25 (×4 groups) | 3.34 | **0.080** | non-finite | 2.28 |
+| `group_rms` | 25 sites = 97 per-token scalars (4 groups each + final RMS) | 3.34 | **0.080** | non-finite | 2.28 |
 | `spectral_rms` | 25 | 2.40 | 0.030 | non-finite | 0.45 |
 
 - **No class-N package can run on frozen denominators** (all non-finite), so that metric doesn't discriminate among them. Only a class-P model has gap 0.
 - **`spectral_rms` is the best combined choice so far**: the best loss (4.766) *and* ~3.7× less ablation distortion than `pre_rms` (0.45 vs 1.64),
   with tighter denominators (2.40 vs 3.15). Bounding the weights spectrally seems to make the norms do less compensating.
 - `sandwich_rms` has the least distortion (0.29) but twice the sites (49). `group_rms` costs the most (2.28, and 2.8× the radial coupling).
-- Caveats: one seed and one checkpoint per package, and 2 probe batches. `sites` counts normalizer sites, not scalars (group_rms has 4 per site).
+- Caveats: one seed and one checkpoint per package, and 2 probe batches. `norm_cost_table.py` now also reports per-token scalars (group_rms: 97 vs 25).
   **`spectral_rms` drops QK-clip** (incompatible), so it needs a 1B high-LR stability check (the seed that diverged under `pre_rms`) before
   it can replace `pre_rms` in the H100 recipe.

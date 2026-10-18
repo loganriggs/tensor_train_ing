@@ -143,5 +143,5 @@ def test_norm_cost_table_metrics(tmp_path):
     p_class = {"operator_class": "P", "normalizer_sensitivity": {"sites": {}}, "fixed_denominator": {}, "ablation": {"components": {}}}
     (tmp_path / "n.json").write_text(json.dumps(n_class)); (tmp_path / "p.json").write_text(json.dumps(p_class))
     n, p = nct.row(str(tmp_path / "n.json")), nct.row(str(tmp_path / "p.json"))
-    assert n["sites"] == 2 and n["spread"] == 4.0 and n["radial"] == 0.02 and math.isinf(n["frozen_gap"]) and n["ablation"] == 0.3
+    assert n["sites"] == 2 and n["scalars"] == 2 and n["spread"] == 4.0 and n["radial"] == 0.02 and math.isinf(n["frozen_gap"]) and n["ablation"] == 0.3
     assert p["sites"] == 0 and p["frozen_gap"] == 0.0 and p["ablation"] is None

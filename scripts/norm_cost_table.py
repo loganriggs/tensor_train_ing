@@ -4,7 +4,7 @@
 
 "Cost" = distance between the real model and the weight-defined polynomial an analysis would study (see docs/h100_readiness.md and the
 2026-10-18 discussion). Five metrics, from structural to behavioural:
-  1. sites        number of input-dependent normalizer sites (0 for a class-P model)
+  1. sites        number of input-dependent normalizer sites (0 for a class-P model); scalars = per-token denominators (group RMS: groups/site)
   2. denom spread median over sites of the q99/q01 ratio of each site's per-token denominator (1.0 = effectively constant)
   3. radial       median over sites of the median |radial Jacobian term| / |direct term| for random directions (hidden coupling)
   4. frozen gap   CE(all denominators frozen at calibrated constants) - CE(live); `inf` if frozen logits are non-finite
@@ -12,6 +12,7 @@
 """
 import json
 import math
+import re
 import statistics
 import sys
 
@@ -25,6 +26,12 @@ def row(path: str) -> dict:
     a = json.load(open(path))
     sites = a.get("normalizer_sensitivity", {}).get("sites", {}) or {}
     dyn = [s for s, d in sites.items() if "denominator" in d]
+    # input-dependent scalars per token: group RMS has one per feature group (scope text from tnlm.analysis.norm_scope)
+    scopes = a.get("normalizer_scopes", {}) or {}
+    def scalars(site):
+        m = re.search(r"over (\d+) contiguous feature groups", scopes.get(site, "") or sites[site].get("scope", ""))
+        return int(m.group(1)) if m else 1
+    n_scalars = sum(scalars(s) for s in dyn)
     spread = _med([d["denominator"]["q99"] / d["denominator"]["q01"] for d in sites.values()
                    if d.get("denominator") and d["denominator"].get("q01")])
     radial = _med([d["radial_over_direct_random_delta"]["q50"] for d in sites.values() if d.get("radial_over_direct_random_delta")])
@@ -38,7 +45,7 @@ def row(path: str) -> dict:
     comps = (a.get("ablation") or {}).get("components", {}) or {}
     abl = _med([abs(c["norm_mediated(live-clamped)"]["mean"]) for c in comps.values()
                 if (c.get("norm_mediated(live-clamped)") or {}).get("mean") is not None])
-    return {"class": a.get("operator_class"), "sites": len(dyn), "spread": spread, "radial": radial, "frozen_gap": gap, "ablation": abl}
+    return {"class": a.get("operator_class"), "sites": len(dyn), "scalars": n_scalars, "spread": spread, "radial": radial, "frozen_gap": gap, "ablation": abl}
 
 
 def fmt(v, spec):
@@ -50,12 +57,12 @@ def fmt(v, spec):
 
 
 def main(argv):
-    print("| package | class | sites | denom spread q99/q01 | radial/direct | frozen-denominator CE gap | ablation distortion |")
-    print("| --- | --- | ---: | ---: | ---: | ---: | ---: |")
+    print("| package | class | sites | scalars/token | denom spread q99/q01 | radial/direct | frozen-denominator CE gap | ablation distortion |")
+    print("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |")
     for spec in argv:
         label, _, path = spec.partition("=")
         r = row(path)
-        print(f"| {label} | {r['class']} | {r['sites']} | {fmt(r['spread'], '.3f')} | {fmt(r['radial'], '.4f')} | "
+        print(f"| {label} | {r['class']} | {r['sites']} | {r['scalars']} | {fmt(r['spread'], '.3f')} | {fmt(r['radial'], '.4f')} | "
               f"{fmt(r['frozen_gap'], '.3f')} | {fmt(r['ablation'], '.3f')} |")
 
 

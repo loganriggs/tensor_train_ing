@@ -11,7 +11,7 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | Base LR 4.5e-4 at width 512, transferred | **Verified to 1B** | 3× this LR is unsafe at 1B without QK-clip |
 | QK-clip τ=100, every 50 steps | **Adopted** in `configs/{confirm_500m,pilot_1b,pilot_3b,funded_7b,funded_32b}.yaml` | Rescues divergence (5.657 → 4.966), free when idle (−0.002 / −0.004) |
 | Depth scaling (CompleteP, `depth_residual_base: 12`) | Verified at 24 layers only | Joint 24×1024 sweep; ≥48 layers untested |
-| LR vs token horizon (does the optimum shift with longer training?) | **Running now** (`configs/lr_horizon`, 50M vs 300M tokens) | Matters for a 20–30B-token run |
+| LR vs token horizon | **Done (09:39 Oct 18):** LR_opt ∝ D^−0.10; use ~3.5e-4 base LR (at width 512) for a 28B-token run | docs/scaling.md "LR vs token horizon" |
 | Global batch size (critical batch) | **Queued** (`runs/critical_batch/run.sh`) | Matters most on 8+ GPUs (large global batch) |
 | **Normalization package** (6 options; brief §1, never run) | **Queued next** (`configs/norm_screen`, 18 runs, ~4.5 h): runs before the batch/exponent experiments, which assume `pre_rms` | If `lagged` (fully polynomial) is close, that's the headline interpretability result |
 | Width exponent (is ½ right?) | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |

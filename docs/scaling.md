@@ -513,3 +513,15 @@ until then) and TaperNorm diverges at gate 0.99. Meanwhile `pre_rms` with α = 0
 
 With α ≤ 0.3 every token stays near the embedding scale, and higher layers act as small corrections. That's ReZero-style and still exactly
 polynomial (a constant per branch). Training-time canaries with α = 0.1 are running.
+
+## LR vs token horizon (rec. 4; `configs/lr_horizon`, 12×512 ~100M, seed 101, cooled; finished 09:39 Oct 18)
+| LR | 2.25e-4 | 3.2e-4 | 4.5e-4 | 6.4e-4 | 9e-4 | fitted optimum (quadratic in log LR) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 50M tokens | 4.891 | 4.837 | 4.797 | **4.781** | 4.790 | 6.8e-4 |
+| 300M tokens | 4.163 | 4.146 | **4.125** | 4.128 | 4.136 | 5.7e-4 |
+
+**The optimal LR falls with training length: LR_opt ∝ D^−0.10** (6× tokens → 0.83×). That's gentler than reported for softmax transformers
+(Bjorck et al. find steeper exponents) and fixed by only two horizons and one seed, so treat it as a slope estimate.
+Extrapolated optima at width 512: **~4.7e-4 at 2B tokens, ~3.9e-4 at 10B, ~3.5e-4 at 28B**. The curve is flat near the optimum (±√2 in LR costs
+≤0.01 at 300M), so the existing base LR 4.5e-4 is within ~0.01 of optimal up to a few B tokens. **For a 28B-token H100 run, use ~3.5e-4 at
+base width 512** (width scaling then applies the ×(512/w)^½ rule), with QK-clip on.

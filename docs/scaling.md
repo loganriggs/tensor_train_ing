@@ -496,7 +496,7 @@ than per-site RMS); (4) a stronger TaperNorm anchor / longer taper window.
 average (`attn_row_power: 1`, new knob) didn't help (calibrated final mean_sq still ~10¹⁶; `pre_rms` unaffected: 6.752 vs 6.77). The
 underlying issue is **polynomial composition**: each block maps a token of scale s to ~s² (MLP) and ~s⁵ (attention), so across layers any token
 above typical scale explodes and any below vanishes. RMSNorm resets every token's scale at every layer; a shared divisor cannot.
-First trigger found in real text: a row with "!" after every word. **Small fixed residual scales fix it at init** (12×256, `lagged`, real data):
+~~First trigger found in real text: a row with "!" after every word.~~ **Correction (07:25):** that "text" was my artifact: I read the int32 token files as uint16, which inserts token 0 ("!") after every real token; the int32 dtype is fixed in `scripts/poly_init_scan.py`. **Small fixed residual scales fix it at init** (12×256, `lagged`, real data):
 
 | init | final-norm mean_sq | worst per-token max/median over sites |
 | --- | ---: | ---: |
@@ -504,6 +504,12 @@ First trigger found in real text: a row with "!" after every word. **Small fixed
 | `attn_row_power: 1` | 2.3·10¹⁶ | 3.1·10²⁰ |
 | `residual_alpha: 0.3` | 1.29 | 4.1 |
 | `residual_alpha: 0.1` | 1.05 | 1.37 |
+
+Re-run on correctly decoded (int32) tokens, 07:25: default 6.9·10¹⁶ / 8.8·10²⁰; `attn_row_power: 1` 1.7·10¹⁶ / 2.5·10²⁰;
+`residual_alpha: 0.3` 1.10 / 1.77; `residual_alpha: 0.1` 1.01 / 1.38. **The conclusion holds:** the default explodes and α ≤ 0.3 fixes init.
+
+**But it does not fix training** (canary, 12×256, real loader): with α = 0.1, `lagged` gets non-finite gradients abruptly at step 25 (grad norm ~0.8
+until then) and TaperNorm diverges at gate 0.99. Meanwhile `pre_rms` with α = 0.1 learns much more slowly (7.68 vs 6.75 at 600 steps).
 
 With α ≤ 0.3 every token stays near the embedding scale, and higher layers act as small corrections. That's ReZero-style and still exactly
 polynomial (a constant per branch). Training-time canaries with α = 0.1 are running.

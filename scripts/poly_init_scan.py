@@ -47,7 +47,7 @@ def main(argv=None):
     ap.add_argument("--layers", type=int, default=12); ap.add_argument("--d-model", type=int, default=256)
     ap.add_argument("--heads", type=int, default=4); ap.add_argument("--set", nargs="+", action="append", default=[])
     a = ap.parse_args(argv)
-    tok = np.fromfile(ROOT / "data/fineweb_pilot_5m/calibration.tokens.bin", dtype=np.uint16)
+    tok = np.fromfile(ROOT / "data/fineweb_pilot_5m/calibration.tokens.bin", dtype="<i4")  # token files are int32 (tnlm.data)
     X = torch.from_numpy(tok[: 256 * 64].astype(np.int64)).view(256, 64)
     for group in [[]] + a.set:
         kw = {k: yaml.safe_load(v) for k, v in (kv.split("=", 1) for kv in group)}

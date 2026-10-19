@@ -1,10 +1,12 @@
 # GPU queue (scripts/run_queue_file.sh re-reads this before each entry; edit to reorder)
-muon_bigbatch
-# scaling-law grid (user-approved 15:05 Oct 19); s101m/s191m/s304m are added when Codex's >=12.5B-token set lands
-configs/scaling_grid/jobs/s38m.sh
+# scaling-law grid (user-approved 15:05 Oct 19); s101m/s191m/s304m on data/fineweb_13b_heldout (audit passed 19:50 Oct 19)
+muon_bigbatch2
 configs/scaling_grid/jobs/s38m_lrx0.5_tpp10.sh
 configs/scaling_grid/jobs/s38m_lrx2_tpp10.sh
 configs/scaling_grid/jobs/s67m.sh
 configs/scaling_grid/jobs/s67m_lrx0.5_tpp10.sh
 configs/scaling_grid/jobs/s67m_lrx2_tpp10.sh
+configs/scaling_grid/jobs/s101m.sh
+configs/scaling_grid/jobs/s191m.sh
+configs/scaling_grid/jobs/s304m.sh
 chinchilla100m:40000:43200

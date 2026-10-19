@@ -691,8 +691,9 @@ so each size costs ~1.09·max D tokens, not the sum. Plan (`scripts/scaling_grid
 Total ≈ 198 GPU-h (~$84) + LR checks (×0.5 / ×2 at s38m and s67m, 10 tokens/param: ~7 GPU-h). LRs per size (`sizes.yaml`) are set for the middle
 budget from the measured Muon optima (drift width^−0.16) and the horizon rule. Driver verified end to end on CPU (`test_scaling_grid_end_to_end_cpu`):
 milestones, cooled branches ending exactly at each budget, evaluations, state pruning, idempotent re-runs. The fit uses each evaluation's
-`actual_prediction_tokens` (the parent's `rung_total_tokens` is the maximum). Queue (`runs/queue.txt`): after `muon_bigbatch` (~20:00), s38m + checks,
-s67m + checks, then chinchilla100m; s101m+ are added when the data lands.
+`actual_prediction_tokens` (the parent's `rung_total_tokens` is the maximum). Queue (`runs/queue.txt`): s38m (started 18:30), `muon_bigbatch2`, s38m/s67m LR checks, s67m, then s101m → s191m → s304m on
+`data/fineweb_13b_heldout` (Codex; audit passed 19:50 Oct 19: 12.61B train tokens, same held-out exclusion/validation docs, tokenizer and
+source revision as the 3B set; sampler opens and batches verified), then chinchilla100m. Grid ETA ≈ 9 days of GPU time (s304m alone ~5 days).
 **Muon 1B, LR 3e-3 (15:34 Oct 19): 4.438** (2e-3: 4.448). So the 1B optimum is ≥3e-3, unbracketed above. Muon's optimal LR by width:
 512 ≈ 3.5e-3, 1024 ≈ 3.1e-3, 2048 ≥ 3e-3, essentially flat across a 4× width range: the spectral rule transfers the LR. **Muon vs the best AdamW at
 1B: −0.124** (4.438 vs 4.562). For the H100 config: start the Muon LR bracket at ~3e-3 (× the horizon factor), not lower.

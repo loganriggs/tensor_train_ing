@@ -149,13 +149,17 @@ def _load_heldout_exclusion(ledger, manifest):
 def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
                  max_documents=100_000, tokenizer=None, split_fractions=None,
                  hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None,
-                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None):
+                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None,
+                 on_shard_scanned=None):
     """Freeze bounded documents. HF mode requires a full commit and explicit shards.
 
     Local revisions are user-supplied labels supplemented by source SHA256. Tokens
     map to source document token offsets, not character offsets (BPE may split bytes).
     Existing output directories are rejected to prevent accidental replacement.
     """
+    if on_shard_scanned is not None:
+        if not callable(on_shard_scanned) or hf_dataset is None:
+            raise ValueError('on_shard_scanned requires a callable and an HF dataset')
     if type(workers) is not int or workers < 1:
         raise ValueError('workers must be a positive integer')
     if type(tokenization_batch_bytes) is not int or tokenization_batch_bytes < 1:
@@ -230,16 +234,23 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
             for shard, path in verified:
                 row = 0
                 parquet = pq.ParquetFile(path)
-                schema = getattr(parquet, 'schema_arrow', None)
-                projection = ({'columns': [name for name in ('text', 'id', 'doc_id')
-                                           if name in schema.names]}
-                              if schema is not None else {})
-                for batch in parquet.iter_batches(batch_size=256, **projection):
-                    for record in batch.to_pylist():
-                        yield record, {'shard': shard, 'row': row}
-                        row += 1
-                if _sha(path) != hf_shard_checksums[shard].lower():
-                    raise ValueError(f'HF raw shard changed during reading: {shard}')
+                try:
+                    schema = getattr(parquet, 'schema_arrow', None)
+                    projection = ({'columns': [name for name in ('text', 'id', 'doc_id')
+                                               if name in schema.names]}
+                                  if schema is not None else {})
+                    for batch in parquet.iter_batches(batch_size=256, **projection):
+                        for record in batch.to_pylist():
+                            yield record, {'shard': shard, 'row': row}
+                            row += 1
+                    if _sha(path) != hf_shard_checksums[shard].lower():
+                        raise ValueError(f'HF raw shard changed during reading: {shard}')
+                finally:
+                    close = getattr(parquet, 'close', None)
+                    if close is not None:
+                        close()
+                if on_shard_scanned is not None:
+                    on_shard_scanned(shard, path)
     out = Path(output_dir)
     # Both duplicate detection and ranked membership live on disk: increasing
     # max_documents must not grow a Python heap or document metadata list.
@@ -407,7 +418,8 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
 def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_000,
                  max_documents=100_000, tokenizer=None, split_fractions=None,
                  hf_dataset=None, hf_config=None, hf_data_files=None, hf_shard_checksums=None, hf_local_shards=None,
-                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None):
+                 workers=1, tokenization_batch_bytes=1048576, exclude_validation_manifest=None,
+                 on_shard_scanned=None):
     """Prepare an immutable dataset; remove this invocation's output on failure.
 
     HF raw-shard SHA256 values are checked against downloaded pinned files or
@@ -420,6 +432,10 @@ def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_0
     and metadata use disk rather than Python collections proportional to the cap.
     exclude_validation_manifest optionally excludes matching validation IDs and
     exact raw/normalized document hashes before selection from every output split.
+    An optional HF-only on_shard_scanned(shard, path) callback runs once after
+    the entire shard is consumed, its second checksum passes and its reader is
+    closed. The preparer never deletes raw files; a callback may manage its own
+    staging. Callback failures abort preparation and remove incomplete output.
     Successful publication fsyncs all files and atomically installs the manifest.
     """
     out = Path(output_dir)
@@ -432,7 +448,8 @@ def prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_0
                              hf_data_files=hf_data_files, hf_shard_checksums=hf_shard_checksums,
                              hf_local_shards=hf_local_shards, workers=workers,
                              tokenization_batch_bytes=tokenization_batch_bytes,
-                             exclude_validation_manifest=exclude_validation_manifest)
+                             exclude_validation_manifest=exclude_validation_manifest,
+                             on_shard_scanned=on_shard_scanned)
     except BaseException:
         shutil.rmtree(out)
         raise

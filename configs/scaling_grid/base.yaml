@@ -1,0 +1,44 @@
+# Sub-1B scaling-law grid (user-approved 15:05 Oct 19): 12-layer models 38M-304M, budgets 5/10/20/40 tokens per (total) parameter, one constant-LR
+# parent per size with cooled branches (scripts/scaling_grid.py). Optimizer: Muon (spectral) - the H100 candidate (−0.11 to −0.15 vs AdamW at
+# 100M-1B, 1-2 seeds); CONFIRM against configs/muon_bigbatch before the first grid parent starts. Normalization pre_rms + QK-clip (Muon x spectral
+# tied at 100M; pre_rms is the most-tested Muon combination and 8% faster). Validation: the same 1476-doc split as every earlier run.
+# Per-size fields (model shape, LR, data manifest) are in sizes.yaml; rung_total_tokens / milestone_tokens / spend_ledger are set by the driver.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: false
+  stage: C
+  gpu_hourly_rate_usd: 0.4219
+  keep_recovery_checkpoints: 1      # multi-day parents: keep one rolling recovery state (resume into a new run dir after a crash)
+  checkpoint_every_seconds: 3600
+  save_initial_checkpoint: false
+model:
+  layers: 12
+  d_key: 64
+  d_value: 64
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  loss_chunk_tokens: 4096
+  width_scaling_base: null           # Muon does its own (spectral) shape scaling; make_optimizer rejects Muon + width scaling
+data:
+  context: 512
+  micro_batch_size: 16
+evaluation:
+  validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  seed: 0
+train:
+  deterministic: false
+  optimizer: muon
+  muon_adjust_lr: spectral_unclamped
+  aux_adamw_lr: 0.00045
+  global_prediction_tokens_per_update: 8192
+  schedule: constant_with_separate_cooldown
+  cooldown_fraction: 0.1
+  compile: true
+  seed: 101
+  stability_every_steps: 500
+  qk_clip_tau: 100.0
+  qk_clip_every_steps: 50

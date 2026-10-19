@@ -674,3 +674,22 @@ edge here is smaller than −0.14. Still untested: Muon at 262k tokens/update (c
 (`stability_trace.py`, columns S1S2max / mlpkurt): S1·S2 max 270 vs ~1.7–2.0k for AdamW, MLP-product excess kurtosis 1.6k vs ~450–620. So the
 Muon gain holds at 4× the 512 width: −0.14 at 512, −0.15 at 1024, −0.11 at 2048. It's an equal-token comparison; equal compute at the H100 batch
 differs by ~2% (see throughput above). LR 3e-3 at 1B lands ~15:10.
+
+## Sub-1B scaling-law grid (user-approved 15:05 Oct 19; `configs/scaling_grid`, `scripts/scaling_grid.py`)
+Five 12-layer sizes, budgets of 5/10/20/40 tokens per total parameter, Muon (spectral) + pre_rms + QK-clip, batch 8,192 tokens/update, same
+1,476-doc validation as every run. One constant-LR parent per size to 0.9·max D, with a cooled branch (last 10%) and an evaluation per budget,
+so each size costs ~1.09·max D tokens, not the sum. Plan (`scripts/scaling_grid.py --plan`):
+
+| size | total / non-emb params | budgets (tokens) | GPU-h | data |
+| --- | --- | --- | ---: | --- |
+| s38m (256) | 38.1M / 12.4M | 0.19–1.53B | 4.6 | 3B set |
+| s67m (384) | 66.5M / 27.9M | 0.33–2.66B | 9.5 | 3B set |
+| s101m (512) | 101.1M / 49.6M | 0.51–4.04B | 18.5 | ≥12.5B set (Codex) |
+| s191m (768) | 188.8M / 111.5M | 0.94–7.55B | 50.7 | ≥12.5B set |
+| s304m (1024) | 303.6M / 200.6M | 1.52–12.14B | 114.6 | ≥12.5B set |
+
+Total ≈ 198 GPU-h (~$84) + LR checks (×0.5 / ×2 at s38m and s67m, 10 tokens/param: ~7 GPU-h). LRs per size (`sizes.yaml`) are set for the middle
+budget from the measured Muon optima (drift width^−0.16) and the horizon rule. Driver verified end to end on CPU (`test_scaling_grid_end_to_end_cpu`):
+milestones, cooled branches ending exactly at each budget, evaluations, state pruning, idempotent re-runs. The fit uses each evaluation's
+`actual_prediction_tokens` (the parent's `rung_total_tokens` is the maximum). Queue (`runs/queue.txt`): after `muon_bigbatch` (~20:00), s38m + checks,
+s67m + checks, then chinchilla100m; s101m+ are added when the data lands.

@@ -1,0 +1,24 @@
+# Muon LR per size, set for the geometric-middle budget (~14 tokens/param): measured 50M-token optima 3.5e-3 (w512), 3.1e-3 (w1024), drift
+# width^-0.16 (w256/w384/w768 extrapolated: 3.9e-3 / 3.7e-3 / 3.3e-3); times the horizon factor (14N / 50M)^-0.10 (rule measured for AdamW;
+# Muon's own is checked by the chinchilla100m Muon arm and the s38m/s67m LR checks at x0.5 / x2).
+# data_manifest: the 3B set covers s38m (1.5B) and s67m (2.7B); larger sizes need the >=12.5B set requested from Codex (COORDINATION 15:10).
+s38m:
+  model: {d_model: 256, heads: 4, d_mlp: 832, activation_checkpointing: false}
+  lr: 0.0031
+  data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
+s67m:
+  model: {d_model: 384, heads: 6, d_mlp: 1248, activation_checkpointing: false}
+  lr: 0.0028
+  data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
+s101m:
+  model: {d_model: 512, heads: 8, d_mlp: 1664, activation_checkpointing: false}
+  lr: 0.0025
+  data_manifest: REQUIRED_12B_MANIFEST
+s191m:
+  model: {d_model: 768, heads: 12, d_mlp: 2496, activation_checkpointing: false}
+  lr: 0.0022
+  data_manifest: REQUIRED_12B_MANIFEST
+s304m:
+  model: {d_model: 1024, heads: 16, d_mlp: 3392, activation_checkpointing: false}
+  lr: 0.0020
+  data_manifest: REQUIRED_12B_MANIFEST

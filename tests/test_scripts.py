@@ -247,3 +247,38 @@ def test_find_runs_throughput_column(tmp_path):
     out = subprocess.run([sys.executable, str(ROOT / "scripts/find_runs.py"), "width=512", "--runs", str(tmp_path), "--throughput"],
                          capture_output=True, text=True, check=True).stdout
     assert "2000 tok/s" in out
+
+
+@pytest.mark.slow
+def test_scaling_grid_end_to_end_cpu(tmp_path):
+    """Parent with per-budget milestones, two cooled branches, evaluations, state pruning; then an idempotent re-run."""
+    import yaml
+    pilot = ROOT / "data/fineweb_pilot_5m/manifest.json"
+    if not pilot.exists():
+        pytest.skip("pilot data not prepared")
+    base = yaml.safe_load(open(ROOT / "configs/scaling_grid/base.yaml"))
+    base["model"].update(padded_vocab=50304)
+    base["data"].update(context=32, micro_batch_size=4)
+    base["evaluation"]["validation_manifest"] = str(pilot)
+    base["train"].update(compile=False, bf16_compute=False, global_prediction_tokens_per_update=256, stability_every_steps=0,
+                         qk_clip_every_steps=5)
+    grid = tmp_path / "grid"; grid.mkdir()
+    (grid / "base.yaml").write_text(yaml.safe_dump(base))
+    (grid / "sizes.yaml").write_text(yaml.safe_dump({"tiny": {"model": {"d_model": 16, "heads": 1, "d_mlp": 32, "layers": 1},
+                                                              "lr": 0.003, "data_manifest": str(pilot)}}))
+    args = [sys.executable, str(ROOT / "scripts/scaling_grid.py"), "tiny", "--tpp", "0.003,0.006", "--device", "cpu",
+            "--grid-dir", str(grid), "--runs-dir", str(tmp_path / "runs"), "--max-seconds", "600"]
+    r = subprocess.run(args, capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0, r.stdout + r.stderr
+    out = tmp_path / "runs/scaling_grid/tiny"
+    ends = [l for l in r.stdout.splitlines() if l.startswith("RUN_END")]
+    assert len(ends) == 2 and "GRID_DONE tiny" in r.stdout, r.stdout
+    evs = sorted(out.glob("*/evaluation/evaluation.json"))
+    assert len(evs) == 2
+    actual = sorted(json.load(open(e))["training_descriptor"]["actual_prediction_tokens"] for e in evs)
+    assert actual[1] == 2 * actual[0], actual  # each branch ends exactly at its own budget (the fit uses actual_prediction_tokens)
+    cooled = sorted(json.load(open(e))["training_descriptor"]["cooldown_status"] for e in evs)
+    assert cooled == ["cooled", "cooled"], cooled
+    assert not list(out.rglob("state.pt")), "model states must be pruned"
+    r2 = subprocess.run(args, capture_output=True, text=True, cwd=ROOT)
+    assert r2.returncode == 0 and "STAGE_START" not in r2.stdout, r2.stdout

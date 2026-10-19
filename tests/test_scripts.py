@@ -207,3 +207,23 @@ def test_find_runs_filters_and_sorts(tmp_path):
     out = subprocess.run([sys.executable, str(ROOT / "scripts/find_runs.py"), "seed=202", "width=512", "--runs", str(tmp_path)],
                          capture_output=True, text=True, check=True).stdout.splitlines()
     assert [l.split()[1] for l in out] == ["e1/b", "e1/a"]
+
+
+def test_run_queue_file_rereads_file_between_entries(tmp_path):
+    qf = tmp_path / "queue.txt"; log = tmp_path / "log"
+    a, b, c = (tmp_path / f"{n}.sh" for n in "abc")
+    a.write_text(f"echo a >> {log}\necho {c} >> {qf}\n")  # entry a appends entry c to the live queue file
+    b.write_text(f"echo b >> {log}\n"); c.write_text(f"echo c >> {log}\n")
+    qf.write_text(f"# comment\n{a}\n\n{b}\n")
+    subprocess.run(["bash", str(ROOT / "scripts/run_queue_file.sh"), "0", str(qf)], capture_output=True, text=True, check=True)
+    assert log.read_text().split() == ["a", "b", "c"]
+    assert qf.read_text().strip() == "# comment"
+    assert [l.split()[1] for l in (tmp_path / "queue.txt.done").read_text().splitlines()] == ["rc=0"] * 3
+
+
+def test_run_queue_file_stops_at_failure(tmp_path):
+    qf = tmp_path / "queue.txt"; bad = tmp_path / "bad.sh"; ok = tmp_path / "ok.sh"
+    bad.write_text("exit 3\n"); ok.write_text("true\n")
+    qf.write_text(f"{bad}\n{ok}\n")
+    r = subprocess.run(["bash", str(ROOT / "scripts/run_queue_file.sh"), "0", str(qf)], capture_output=True, text=True)
+    assert r.returncode == 3 and qf.read_text().strip() == str(ok)

@@ -13,9 +13,10 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | Depth scaling (CompleteP, `depth_residual_base: 12`) | Verified at 24 layers only | Joint 24×1024 sweep; ≥48 layers untested |
 | LR vs token horizon | **Done (09:39 Oct 18):** LR_opt ∝ D^−0.10; use ~3.5e-4 base LR (at width 512) for a 28B-token run | docs/scaling.md "LR vs token horizon" |
 | Global batch size (critical batch) | **Done (15:59 Oct 18):** no penalty to ≥128k tokens/update; scale LR ≤ √(batch ratio) | docs/scaling.md "Critical batch size" |
-| **Normalization package** (6 options; brief §1, never run) | **Queued next** (`configs/norm_screen`, 18 runs, ~4.5 h): runs before the batch/exponent experiments, which assume `pre_rms` | If `lagged` (fully polynomial) is close, that's the headline interpretability result |
-| Width exponent (is ½ right?) — **done 03:53 Oct 19: optimal base LR drifts as width^−0.39; H100 LR corrected to 4e-4** | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |
-| Behaviour at a compute-optimal horizon | **Not yet tested**: all runs ≤ 300M tokens | Plan: 100M model × ~2B tokens here (~8 h) before the rental |
+| **Normalization package** (A `pre_rms` + QK-clip vs B `spectral_rms`) | **Pending user decision** (leans B). Seed 202 + seed 101 done at base LR; seed-101 3× LR lands ~10:30 Oct 19 | 100M: spectral −0.025 (2 seeds). 1B base LR: +0.009 / +0.006 (tie). 1B 3× LR, seed 202: spectral 4.609 vs pre_rms+QK-clip 4.966. Throughput −8% (after the 07:50 fix) |
+| Width exponent (is ½ right?) | **Done 03:53 Oct 19:** optimal base LR drifts as width^−0.39 under the ½ rule; H100 LR corrected 7e-4 → 4e-4 | docs/scaling.md "Width-exponent fit" (1 seed) |
+| Behaviour at a compute-optimal horizon | **Queued** (`configs/chinchilla100m`: pre_rms, spectral_rms, Muon; 100M × 2B tokens, after the Muon follow-up) | All other evidence is ≤ 300M tokens |
+| **Optimizer: Muon (spectral) vs AdamW** | **Promising; 1B check queued** (`configs/muon_followup`, ~14:45 Oct 19) | −0.14 / −0.15 at widths 512 / 1024 (1 seed); 300M Muon beats 1B AdamW. LR drift only width^−0.16. Before adoption: 1B result, 2nd seed (queued), throughput at 1B, and Muon at H100 batch (262k tokens/update; critical batch was measured for AdamW only) |
 
 ## 2. Software for multi-GPU
 

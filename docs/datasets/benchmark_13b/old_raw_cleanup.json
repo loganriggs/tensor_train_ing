@@ -1,0 +1,25 @@
+{
+  "verified": [
+    {
+      "path": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2019-09/000_00000.parquet",
+      "bytes": 2148187944,
+      "sha256": "14956d291201dc37c48277d10c45be0268a193943822bbffe9f4a537b38c5b43"
+    },
+    {
+      "path": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2019-09/000_00001.parquet",
+      "bytes": 2147130513,
+      "sha256": "4b08ee824b64c2913f6c9a7b2cbef3e37b6bdec3924e334c3cf2828edaa348b8"
+    },
+    {
+      "path": "/workspace/tensor_train_ing/data/fineweb_3b_raw/data/CC-MAIN-2021-10/000_00000.parquet",
+      "bytes": 2148944184,
+      "sha256": "0dd93265d8ebe326dd2a72e4c9563580c80e3843d6ae8e6ecf85bae696c4aea0"
+    }
+  ],
+  "verified_unix": 1792432154.2903013,
+  "reason": "User-authorized old raw cleanup after completed scan; training dataset untouched",
+  "free_bytes_before": 48863154176,
+  "bytes_removed": 6444262641,
+  "free_bytes_after": 55508742144,
+  "completed": true
+}

@@ -1,0 +1,43 @@
+{
+  "phase": "verified_shards_scanned",
+  "root": "/workspace/tensor_train_ing/data/fineweb_13b_raw",
+  "paths": [
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00000.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00000.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00004.parquet"
+  ],
+  "removed": [
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2019-09/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2021-10/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00000.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2022-05/000_00004.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00000.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00001.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00002.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00003.parquet",
+    "/workspace/tensor_train_ing/data/fineweb_13b_raw/data/CC-MAIN-2023-06/000_00004.parquet"
+  ],
+  "bytes_removed": 36516916181
+}

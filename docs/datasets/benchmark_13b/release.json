@@ -1,0 +1,37 @@
+{
+  "accepted": true,
+  "acceptance_scope": "Dataset artifacts, fixed heldout exclusion and sampled sampler replay; does not validate trainer token accounting or guarantee single-epoch training.",
+  "recorded_at_utc": "2026-10-19T22:42:21.064529+00:00",
+  "manifest": "data/fineweb_13b_heldout/manifest.json",
+  "manifest_sha256": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+  "train_tokens": 12612675813,
+  "fixed_validation_manifest": "data/fineweb_confirmation_320m/manifest.json",
+  "fixed_validation_manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5",
+  "checks": {
+    "successful_preparation": true,
+    "minimum_train_tokens": true,
+    "independent_audit_passed": true,
+    "artifact_checks_passed": true,
+    "zero_exact_heldout_overlap": true,
+    "fixed_validation_unchanged": true,
+    "manifest_binding": true,
+    "token_count_binding": true,
+    "source_binding": true,
+    "near_end_sampler_exact_replay": true,
+    "disk_guard_finished_above_reserve": true
+  },
+  "evidence_sha256": {
+    "audit.json": "1c7089509a4f6b57852a5c06b62b9989dd1adba3a7ced5df94aa4129de097da3",
+    "disk_guard.json": "ed8448ffef252e45145c89d0f0815ac0673e0ecf1e7851b16a4091f9e2ec046f",
+    "manifest.json": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+    "old_raw_cleanup.json": "0cae0f3b7c2661cf21f99d21d43428985ec46dc240fbdf1b9794d0acf81cc6a7",
+    "preparation.json": "11d5e9297f36205c6c27a4aa5923dfd0a633242423214862a484715fadbb8383",
+    "preparation.pruning.json": "3ab0c31254f7148f6e87c22c9c6f5f1f03f9e23a8a2f1a3c845f5d70b783b115",
+    "sampler.json": "af694857d350357563e69b58726497c468551761504aec21dee7c18905d52591",
+    "source.json": "b657c53d76bf73650674c76e987db05ce8133439ed0987fe4ba3fd90ce3eedef"
+  },
+  "notes": [
+    "preparation.json is preserved verbatim: its accepted=false denotes the pre-audit preparation stage. This release records acceptance after the independent audit and sampler check.",
+    "Checks bind already-completed audit evidence; the full artifact hash scan is not repeated by this release step."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "status": "pipeline_exited",
+  "root_pid": 799816,
+  "root_create_time": 1792427123.72,
+  "requested_floor_bytes": 26843545600,
+  "pause_below_bytes": 37580963840,
+  "resume_at_bytes": 42949672960,
+  "free_bytes": 57087803392,
+  "minimum_free_bytes_observed": 43010117632,
+  "events": []
+}

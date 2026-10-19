@@ -1,0 +1,122 @@
+{
+  "artifacts": {
+    "calibration.tokens.bin": "34e1511f79db0951882a16f86a7bb0c8edb6f64d2cb72b377d706f07a1bb7603",
+    "documents.jsonl": "0794aea87a5652699f9dcbd4c4af6881d2bd230fd2245f06ed6e9f34c7198344",
+    "test.tokens.bin": "8fe949896d4392098317899770c92cc521ce6eb7bdd464301438ed25c9b97d54",
+    "train.tokens.bin": "9052c418b69693c115ffb0fb6f9d8e303332c71bc9d14c07c2afb6903eb0ee1b",
+    "val.tokens.bin": "e9f1a22e97ce34b303668806564f6e95a7a4118ea8d1ffbdb918f37117ca3d1b"
+  },
+  "boundary_loss_policy": "ignore cross-document transitions and padding",
+  "bounded_selection": "smallest domain-separated selection SHA256 ranks across entire declared source; canonical rank order then token cap",
+  "deduplication": "identical stable-ID/content duplicates collapse; conflicting contents rejected",
+  "documents": 18143565,
+  "format_version": 1,
+  "hash_domains": {
+    "selection": "UTF8(selection + NUL + stable document ID)",
+    "split": "UTF8(stable document ID)"
+  },
+  "heldout_exclusion": {
+    "documents_sha256": "4cf3a5f77a7a78f2bce5f3fc8d265d82971f7a2067afa8e934fba4f633614a9b",
+    "excluded_unique_documents": 4506,
+    "manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5",
+    "rule": "exclude every source document matching a fixed validation ID, raw content SHA256, or CRLF/CR-to-LF processed content SHA256, before selection and from all output splits",
+    "validation_documents": 4496
+  },
+  "max_documents": 30000000,
+  "max_tokens": 13000000000,
+  "membership": "SHA256(UTF8(stable document ID)), fixed fraction intervals",
+  "preparation_cost": "full declared source scan and HF raw-shard download/hash; output token/document bounds do not bound scan cost",
+  "preprocessing": "CRLF/CR to LF; otherwise unchanged",
+  "scan_records": 22018907,
+  "scan_unique_documents": 22018907,
+  "source": {
+    "config": null,
+    "dataset": "HuggingFaceFW/fineweb",
+    "kind": "huggingface",
+    "revision": "9bb295ddab0e05d785b879661af7260fed5140fc",
+    "shard_hash_verification": "SHA256 of every local raw shard verified before parquet reading",
+    "shard_sha256": {
+      "data/CC-MAIN-2019-09/000_00000.parquet": "14956d291201dc37c48277d10c45be0268a193943822bbffe9f4a537b38c5b43",
+      "data/CC-MAIN-2019-09/000_00001.parquet": "4b08ee824b64c2913f6c9a7b2cbef3e37b6bdec3924e334c3cf2828edaa348b8",
+      "data/CC-MAIN-2019-09/000_00002.parquet": "f2323c18ca5f64e12705780912a277fb0938e51da8520aae77fb5505ec4082cd",
+      "data/CC-MAIN-2019-09/000_00003.parquet": "c14c8c6701398d84df27aded667f4b8c9ae4c6037020cd9a8b6b6f5c73dc07d5",
+      "data/CC-MAIN-2019-09/000_00004.parquet": "618ba4310590a450c08a412c5514649d7baba36d7180c9d2c934ea290bbb29e7",
+      "data/CC-MAIN-2019-09/004_00049.parquet": "beea79c4e9220a0cafe920ef6e78538c682df3b8afe336c761a51849646d9adf",
+      "data/CC-MAIN-2021-10/000_00000.parquet": "0dd93265d8ebe326dd2a72e4c9563580c80e3843d6ae8e6ecf85bae696c4aea0",
+      "data/CC-MAIN-2021-10/000_00001.parquet": "7d9d98a62ca371fdf160c95be19cccb1cb5d261193e31aa711a721b61fb85a9c",
+      "data/CC-MAIN-2021-10/000_00002.parquet": "95e2ee0af815feb7492e7a40554d53ffd696df3e749067c3dd8bcd22145b9329",
+      "data/CC-MAIN-2021-10/000_00003.parquet": "9833db3dfa4f3c085a2f3ddaf0575d2a49960457930d035b1005d80b722b0802",
+      "data/CC-MAIN-2021-10/000_00004.parquet": "3068980b2a089bcd3461345341fe82db0ef733c560c82ad2a4fbe9ea853b92f5",
+      "data/CC-MAIN-2021-10/004_00048.parquet": "c95da269a7a10a713663b8b784030ff74dde1440b05345ef944a048eafade63d",
+      "data/CC-MAIN-2022-05/000_00000.parquet": "f60d7adf6d8d254e708c8c4d494f0f7867c90d71ea58e925ce1969736b460f22",
+      "data/CC-MAIN-2022-05/000_00001.parquet": "ca692b7e66cda3868c3d6e0013d9c6c5ae7ec725315a5157e9602987b27a1463",
+      "data/CC-MAIN-2022-05/000_00002.parquet": "50e4f0ce299cea8ee478a6dfa4e3197cbbbd3c960947e0ef223ec6fcb235cab8",
+      "data/CC-MAIN-2022-05/000_00003.parquet": "5b3e92e3e99e065800279492528a3023b179c0b74631d7e6cfada79e1529a5e0",
+      "data/CC-MAIN-2022-05/000_00004.parquet": "1cb71c2a50174d3504f6a4c34f2a50423c383fb922b7c32a031abb3f305ff141",
+      "data/CC-MAIN-2022-05/005_00046.parquet": "ed94dedbbd3494f6eb1681888490d1cc9b5e6e03bf35ab89ca9058bfd278b110",
+      "data/CC-MAIN-2023-06/000_00000.parquet": "d7a0e73c776ad9128e973a41eeaacb535a0aa6a9542b27c4bd705e72f5570473",
+      "data/CC-MAIN-2023-06/000_00001.parquet": "dcd8703773e8848bb7477d2287350fb21dbfbfe51ab3d88d9a6eacb3d268aae8",
+      "data/CC-MAIN-2023-06/000_00002.parquet": "0c4ec3f7932edbb2a45f865f164025666009da2211b2c20cddfe75e149b215a7",
+      "data/CC-MAIN-2023-06/000_00003.parquet": "be643060721db46973c057861873f9ed6de87a4c94bb7815dcaefb5b7f7dce15",
+      "data/CC-MAIN-2023-06/000_00004.parquet": "381986ff72e206ae1ff72852af555fcb523d80676188fb1c72c9b2ff4a07c582",
+      "data/CC-MAIN-2023-06/006_00046.parquet": "12c5764162861efa922c5e9df408ca5aaf747079abb35856e5ff07269efcd794"
+    },
+    "shards": [
+      "data/CC-MAIN-2019-09/000_00000.parquet",
+      "data/CC-MAIN-2019-09/000_00001.parquet",
+      "data/CC-MAIN-2019-09/000_00002.parquet",
+      "data/CC-MAIN-2019-09/000_00003.parquet",
+      "data/CC-MAIN-2019-09/000_00004.parquet",
+      "data/CC-MAIN-2019-09/004_00049.parquet",
+      "data/CC-MAIN-2021-10/000_00000.parquet",
+      "data/CC-MAIN-2021-10/000_00001.parquet",
+      "data/CC-MAIN-2021-10/000_00002.parquet",
+      "data/CC-MAIN-2021-10/000_00003.parquet",
+      "data/CC-MAIN-2021-10/000_00004.parquet",
+      "data/CC-MAIN-2021-10/004_00048.parquet",
+      "data/CC-MAIN-2022-05/000_00000.parquet",
+      "data/CC-MAIN-2022-05/000_00001.parquet",
+      "data/CC-MAIN-2022-05/000_00002.parquet",
+      "data/CC-MAIN-2022-05/000_00003.parquet",
+      "data/CC-MAIN-2022-05/000_00004.parquet",
+      "data/CC-MAIN-2022-05/005_00046.parquet",
+      "data/CC-MAIN-2023-06/000_00000.parquet",
+      "data/CC-MAIN-2023-06/000_00001.parquet",
+      "data/CC-MAIN-2023-06/000_00002.parquet",
+      "data/CC-MAIN-2023-06/000_00003.parquet",
+      "data/CC-MAIN-2023-06/000_00004.parquet",
+      "data/CC-MAIN-2023-06/006_00046.parquet"
+    ]
+  },
+  "split_fractions": {
+    "calibration": 0.01,
+    "test": 0.01,
+    "train": 0.97,
+    "val": 0.01
+  },
+  "split_order": [
+    "train",
+    "val",
+    "test",
+    "calibration"
+  ],
+  "token_offset_semantics": "source_token_* are legacy processed document stream offsets including synthetic EOS; processed_token_* exclude EOS; no original character/byte alignment",
+  "tokenizer": {
+    "eos_id": 50256,
+    "fingerprint_sha256": "5e915a49323da8b419011d3c3c0f1d098da4302b46c9b54ca83761860eafca94",
+    "name": "gpt2",
+    "package": "tiktoken",
+    "regex_pattern": "'(?:[sdmt]|ll|ve|re)| ?\\p{L}++| ?\\p{N}++| ?[^\\s\\p{L}\\p{N}]++|\\s++$|\\s+(?!\\S)|\\s",
+    "special_tokens": {
+      "<|endoftext|>": 50256
+    },
+    "version": "0.14.0",
+    "vocabulary_sha256": "bdc599f0a294cff99d60cf83aed3870857b30bc0d1d06164cae137831b55257c"
+  },
+  "tokens": {
+    "calibration": 129995651,
+    "test": 130822788,
+    "train": 12612675813,
+    "val": 126505748
+  }
+}

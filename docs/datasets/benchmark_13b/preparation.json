@@ -1,0 +1,30 @@
+{
+  "returncode": 0,
+  "error": null,
+  "elapsed_seconds": 12908.594391957973,
+  "peak_process_tree_rss_bytes": 5166456832,
+  "peak_parent_rss_bytes": 5166456832,
+  "minimum_free_bytes_observed": 43010117632,
+  "source_spec_sha256": "b657c53d76bf73650674c76e987db05ce8133439ed0987fe4ba3fd90ce3eedef",
+  "frozen_source_spec": "/workspace/tensor_train_ing/runs/codex_data_13b/preparation.source.json",
+  "implementation_sha256": {
+    "tnlm/data.py": "b57bfc73e6a2ed14056678caca52ec195d2a3a34dbd926caf5c2be15cf384936",
+    "tnlm/data_preparation.py": "46a1cb872d4b1af418d8fb78844ce8379098aa7b0f91760b58f3dd334e514b6c",
+    "scripts/prepare_scaling_data.py": "8164b819757cf8b53b249be75cb10d7b47796288eb57d327c4ee489aa1e8095f"
+  },
+  "rss_scope": "sampled summed parent/descendant RSS every0.25s; shared pages counted per process",
+  "accepted": false,
+  "manifest": "/workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json",
+  "manifest_sha256": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+  "tokens": {
+    "calibration": 129995651,
+    "test": 130822788,
+    "train": 12612675813,
+    "val": 126505748
+  },
+  "documents": 18143565,
+  "tokens_per_second": 1007080.988469122,
+  "train_tokens_per_second": 977075.8480766636,
+  "minimum_train_tokens_met": true,
+  "acceptance_status": "awaiting independent artifact and heldout audit"
+}

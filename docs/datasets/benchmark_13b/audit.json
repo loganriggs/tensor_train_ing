@@ -1,0 +1,75 @@
+{
+  "status": "passed",
+  "manifest": "/workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json",
+  "reference_manifest": "/workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json",
+  "validation_manifest": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json",
+  "minimum_train_tokens": 12500000000,
+  "errors": [],
+  "scope": "all output splits; exact stable ID/raw/processed whole-document matches",
+  "limitations": [
+    "No near-duplicate or partial-content audit.",
+    "Tokenizer/preprocessing/deduplication policies are compared by provenance; source retokenization and all-pairs deduplication are not repeated."
+  ],
+  "manifest_sha256": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+  "reference_manifest_sha256": "390b37a6c2fd0e3c51e028ef0d3719f91b690c3b72c4cbd220ed5f100e886543",
+  "validation_manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5",
+  "validation_documents": 4496,
+  "tokens": {
+    "calibration": 129995651,
+    "test": 130822788,
+    "train": 12612675813,
+    "val": 126505748
+  },
+  "artifact_checks": {
+    "calibration.tokens.bin": {
+      "sha256": "34e1511f79db0951882a16f86a7bb0c8edb6f64d2cb72b377d706f07a1bb7603",
+      "matches": true,
+      "bytes": 519982604
+    },
+    "test.tokens.bin": {
+      "sha256": "8fe949896d4392098317899770c92cc521ce6eb7bdd464301438ed25c9b97d54",
+      "matches": true,
+      "bytes": 523291152
+    },
+    "train.tokens.bin": {
+      "sha256": "9052c418b69693c115ffb0fb6f9d8e303332c71bc9d14c07c2afb6903eb0ee1b",
+      "matches": true,
+      "bytes": 50450703252
+    },
+    "val.tokens.bin": {
+      "sha256": "e9f1a22e97ce34b303668806564f6e95a7a4118ea8d1ffbdb918f37117ca3d1b",
+      "matches": true,
+      "bytes": 506022992
+    },
+    "documents.jsonl": {
+      "sha256": "0794aea87a5652699f9dcbd4c4af6881d2bd230fd2245f06ed6e9f34c7198344",
+      "matches": true
+    }
+  },
+  "documents": 18143565,
+  "overlap": {
+    "train": {
+      "id": 0,
+      "content_sha256": 0,
+      "processed_sha256": 0
+    },
+    "val": {
+      "id": 0,
+      "content_sha256": 0,
+      "processed_sha256": 0
+    },
+    "test": {
+      "id": 0,
+      "content_sha256": 0,
+      "processed_sha256": 0
+    },
+    "calibration": {
+      "id": 0,
+      "content_sha256": 0,
+      "processed_sha256": 0
+    }
+  },
+  "overlap_examples": [],
+  "fixed_validation_unchanged": true,
+  "elapsed_seconds": 210.13163019204512
+}

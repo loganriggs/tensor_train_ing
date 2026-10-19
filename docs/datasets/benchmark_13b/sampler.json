@@ -1,0 +1,62 @@
+{
+  "batch_sha256": [
+    "37861f4daf53bd6f1dd0e0642ae859e5f88e81e2d5ade66d252844934b6a2605",
+    "5226b372f7d54c87dbf665ccb30cb3a7a2ca96b293953f02047173f88d7b9383",
+    "26c2e40162444e9ea3ee21bb29dc6d51271c7d7a639c269e00642ad0d16f6a42",
+    "4605d5efc86cc3a6e677fee2e73c02a6ff0d0059dc51cb400b6a34f9f150dcf3"
+  ],
+  "first_batch_seconds": 0.021433325950056314,
+  "implementation": "compact",
+  "imported_process_peak_rss_bytes": 526815232,
+  "initialization_seconds": 55.24362437904347,
+  "lineage_sha256": [
+    "9b556bea3615176c0f79b86ea87f470ca79be98cce8e408f39b73bfe717a3b88",
+    "ef134d94324ab8a822dd8654c9618718ee0a237bb2feb0e5609370a2077ba47f",
+    "df6edac6c3676b663b28b4b80901198ea0121987102273cbb84e4b91f01c132f",
+    "2c889d0230d8cc2edd0d89a229da15f2a0e915ecf8543cdaf6a21cd812cff600"
+  ],
+  "long_resume": {
+    "batch_sha256": "edf845b65d9171a026b0a90065d39ef90ddd976b2d42f0aa2253f949ee544c11",
+    "checkpoint": {
+      "batch_size": 16,
+      "context": 512,
+      "cursor": 24634035,
+      "document_cursor": 17604268,
+      "epoch": 0,
+      "manifest_hash": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+      "packing_version": "document-shuffle-row-overlap-incremental-v2",
+      "seed": 0,
+      "split": "train",
+      "token_cursor": 80
+    },
+    "exact_replay": true,
+    "peak_rss_bytes": 813101056,
+    "seconds": 0.08309901505708694
+  },
+  "manifest_sha256": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+  "memory_after_batches": {
+    "Private_Clean_bytes": 147456000,
+    "Private_Dirty_bytes": 299233280,
+    "Pss_bytes": 506931200,
+    "Rss_bytes": 686526464,
+    "Shared_Clean_bytes": 239837184,
+    "Shared_Dirty_bytes": 0
+  },
+  "peak_rss_bytes": 813101056,
+  "scope": "Fresh CPU process, B16/T512/seed0; artifact verification included; imports excluded from time but included in RSS",
+  "source_sha256": "b57bfc73e6a2ed14056678caca52ec195d2a3a34dbd926caf5c2be15cf384936",
+  "startup_and_first_batch_seconds": 55.265057704993524,
+  "state": {
+    "batch_size": 16,
+    "context": 512,
+    "cursor": 64,
+    "document_cursor": 47,
+    "epoch": 0,
+    "manifest_hash": "70635d120e3dd619fa8eff8f94aacf8c23183a9ed3f37d11249e04c99dec2bac",
+    "packing_version": "document-shuffle-row-overlap-incremental-v2",
+    "seed": 0,
+    "split": "train",
+    "token_cursor": 120
+  },
+  "training_documents": 17604288
+}

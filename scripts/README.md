@@ -19,6 +19,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 4c | `find_orphan_states.py [--keep ...]` | List checkpoints whose run already has an evaluation (deletion candidates; deletes nothing) |
 | 4d | `fit_lr_optimum.py [--pattern ...]` | Per-group LR optimum (quadratic in log LR) and power law of the optimum across groups |
 | 4d | `throughput.py RUN_DIR [...]` | Steady-state tokens/s per run (second half of metrics.jsonl); catches throughput regressions |
+| 4d | `find_runs.py KEY=VALUE ... [--top N]` | Evaluated runs matching training-descriptor filters, best CE first (like-for-like comparators) |
 | 5 | `export_results.py` | Weight-free mirror of runs/ into git-tracked results/ |
 | | `autocommit_results.sh` | Hourly export, commit and push of results/ (runs in the background) |
 

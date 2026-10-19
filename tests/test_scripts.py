@@ -198,3 +198,12 @@ def test_stability_trace_accepts_run_directory(tmp_path):
     out = subprocess.run([sys.executable, str(ROOT / "scripts/stability_trace.py"), str(tmp_path / "exp")],
                          capture_output=True, text=True, check=True).stdout
     assert "parent/metrics.jsonl" in out and "     10" in out
+
+
+def test_find_runs_filters_and_sorts(tmp_path):
+    for exp, cand, ce, seed in (("e1", "a", 4.8, 202), ("e1", "b", 4.7, 202), ("e2", "c", 4.6, 101)):
+        d = tmp_path / exp / "v1" / cand / cand / "evaluation"; d.mkdir(parents=True)
+        (d / "evaluation.json").write_text(json.dumps({"ce": ce, "training_descriptor": {"seed": seed, "width": 512, "lr": 1e-3}}))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/find_runs.py"), "seed=202", "width=512", "--runs", str(tmp_path)],
+                         capture_output=True, text=True, check=True).stdout.splitlines()
+    assert [l.split()[1] for l in out] == ["e1/b", "e1/a"]

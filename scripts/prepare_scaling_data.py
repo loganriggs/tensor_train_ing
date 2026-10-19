@@ -92,7 +92,8 @@ def main(argv=None):
     p.add_argument('--minimum-free-bytes', type=int, default=22_000_000_000)
     p.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     args = p.parse_args(argv)
-    source = json.loads(args.source.read_text())
+    source_bytes = args.source.read_bytes()
+    source = json.loads(source_bytes)
     if args.worker:
         worker(args, source)
         return 0
@@ -100,7 +101,11 @@ def main(argv=None):
         raise FileExistsError('output/report must be fresh')
     args.report.parent.mkdir(parents=True, exist_ok=True)
     import psutil
-    command = [sys.executable, '-u', str(Path(__file__).resolve()), *(sys.argv[1:] if argv is None else argv), '--worker']
+    frozen_source = args.report.with_suffix('.source.json').resolve()
+    with frozen_source.open('xb') as stream:
+        stream.write(source_bytes)
+    source_digest = hashlib.sha256(source_bytes).hexdigest()
+    command = [sys.executable, '-u', str(Path(__file__).resolve()), *(sys.argv[1:] if argv is None else argv), '--source', str(frozen_source), '--worker']
     started = time.monotonic()
     peak = parent_peak = 0
     free_min = shutil.disk_usage(args.out.parent).free
@@ -142,11 +147,17 @@ def main(argv=None):
                 time.sleep(.25)
         except BaseException as error:
             guard_error = guard_error or str(error)
-            os.killpg(child.pid, signal.SIGTERM)
+            try:
+                os.killpg(child.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
             try:
                 child.wait(timeout=30)
             except subprocess.TimeoutExpired:
-                os.killpg(child.pid, signal.SIGKILL)
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
                 child.wait()
         finally:
             signal.signal(signal.SIGTERM, previous_handler)
@@ -154,7 +165,7 @@ def main(argv=None):
     report = {'returncode': child.returncode, 'error': guard_error,
               'elapsed_seconds': elapsed, 'peak_process_tree_rss_bytes': peak,
               'peak_parent_rss_bytes': parent_peak, 'minimum_free_bytes_observed': free_min,
-              'source_spec_sha256': sha(args.source), 'implementation_sha256': implementations,
+              'source_spec_sha256': source_digest, 'frozen_source_spec': str(frozen_source), 'implementation_sha256': implementations,
               'rss_scope': 'sampled summed parent/descendant RSS every0.25s; shared pages counted per process',
               'accepted': False}
     manifest_path = args.out/'manifest.json'

@@ -320,3 +320,11 @@ def test_throughput_drop_ratio(tmp_path):
     f.write_text("\n".join(map(json.dumps, rows)))
     out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), "--drop", str(f)], capture_output=True, text=True, check=True).stdout
     assert float(out) < 0.8
+
+
+def test_fit_lr_optimum_suggests_bracketing_point():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import fit_lr_optimum as f
+    assert f.suggest_next({"lrs": [1e-3, 2e-3], "ce": [4.3, 4.2]}) == 4e-3      # best at the top edge -> go up
+    assert f.suggest_next({"lrs": [1e-3, 2e-3], "ce": [4.2, 4.4]}) == 5e-4      # best at the bottom edge -> go down
+    assert f.suggest_next({"lrs": [1e-3, 2e-3, 4e-3], "ce": [4.3, 4.2, 4.3]}) is None

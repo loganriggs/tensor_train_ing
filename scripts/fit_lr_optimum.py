@@ -27,7 +27,8 @@ def collect(runs: Path, pattern: str, also=()) -> dict:
         m = next((r.fullmatch(name) for r in rxs if r.fullmatch(name)), None)
         if not m:
             continue
-        g, lr = int(m.group("group")), float(m.group("lr"))
+        g, lr = m.group("group"), float(m.group("lr"))
+        g = int(g) if g.isdigit() else g  # widths are numeric; optimizer/variant names are fine too
         prev = pts.get((g, lr))
         if prev is None or f.stat().st_mtime > prev[1]:
             pts[(g, lr)] = (json.load(open(f))["ce"], f.stat().st_mtime)
@@ -52,6 +53,18 @@ def fit(points: dict) -> dict:
     return res
 
 
+def suggest_next(r: dict, factor: float = 2.0):
+    """If the lowest sampled CE sits at the edge of the sampled LRs, the next LR to bracket it (one more factor-2 step outward); else None."""
+    if not r["lrs"]:
+        return None
+    best = min(range(len(r["lrs"])), key=lambda i: r["ce"][i])
+    if len(r["lrs"]) >= 2 and best == len(r["lrs"]) - 1:
+        return r["lrs"][-1] * factor
+    if len(r["lrs"]) >= 2 and best == 0:
+        return r["lrs"][0] / factor
+    return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--pattern", default=r"w(?P<group>\d+)ws_lr(?P<lr>[0-9.e-]+)_s101")
@@ -65,7 +78,10 @@ def main(argv=None):
         o = "n/a (<3 LRs)" if r["opt"] is None and len(r["lrs"]) < 3 else (f"{r['opt']:.2e}" if r["opt"] else "no minimum")
         flag = "" if r["interior"] or r["opt"] is None else "  (outside sampled range: extrapolated)"
         print(f"group {g}: {pts}  ->  optimum {o}{flag}")
-    good = [(g, r["opt"]) for g, r in res.items() if r["interior"]]
+        nxt = suggest_next(r)
+        if nxt:
+            print(f"  NEXT group {g}: add lr {nxt:.3g} (best sampled point is at the edge; bracket before trusting the optimum)")
+    good = [(g, r["opt"]) for g, r in res.items() if r["interior"] and isinstance(g, int)]
     if len(good) >= 2:
         slope, k = np.polyfit(np.log([g for g, _ in good]), np.log([o for _, o in good]), 1)
         print(f"optimum ∝ group^{slope:.3f}  (from {len(good)} groups with interior optima)")

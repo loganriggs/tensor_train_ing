@@ -189,3 +189,12 @@ def test_throughput_uses_second_half(tmp_path):
     out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), str(tmp_path)],
                          capture_output=True, text=True, check=True).stdout
     assert "runA" in out and "1000 tok/s" in out
+
+
+def test_stability_trace_accepts_run_directory(tmp_path):
+    d = tmp_path / "exp" / "cand" / "parent"; d.mkdir(parents=True)
+    st = {"stats": {"worst": {"S1S2_max_abs": 5.0, "mlp_prod_max_abs": 1.0, "mlp_prod_excess_kurtosis": 0.0}, "per_layer": [{"S1_rms": 1.0}]}}
+    (d / "metrics.jsonl").write_text(json.dumps({"step": 10, "loss": 3.0, "stability": st}))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/stability_trace.py"), str(tmp_path / "exp")],
+                         capture_output=True, text=True, check=True).stdout
+    assert "parent/metrics.jsonl" in out and "     10" in out

@@ -1,6 +1,7 @@
 """Summarize the periodic stability logs (`train.stability_every_steps`) of a training run.
 
     python scripts/stability_trace.py runs/width2048/v2/<cand>/<cand>/parent/metrics.jsonl [more metrics.jsonl ...]
+    python scripts/stability_trace.py runs/spectral1b_s101          # a directory: every **/parent/metrics.jsonl under it
 
 Prints, per logged step, the worst-layer max |S1*S2|, the last-layer S1 RMS, and the worst MLP-product max and excess kurtosis.
 Schema: metrics.jsonl records with `stability.stats.{per_layer, worst}` (see `tnlm.analysis.stability_stats`). A >10x jump in
@@ -11,6 +12,7 @@ LR 1.35e-3 reached 2.7e5 by step 500 and 1.6e7 by step 4000).
 ABS_LIMIT = 1e5
 import json
 import sys
+from pathlib import Path
 
 
 def trace(path):
@@ -26,8 +28,14 @@ def trace(path):
     return rows
 
 
+def expand(args):
+    for a in args:
+        p = Path(a)
+        yield from ([p] if p.is_file() else sorted(p.rglob("parent/metrics.jsonl")))
+
+
 def main(paths):
-    for p in paths:
+    for p in expand(paths):
         print(p)
         print(f"{'step':>7} {'S1S2max':>10} {'lastS1rms':>9} {'mlpmax':>9} {'mlpkurt':>9} {'loss':>7}")
         prev = first = None

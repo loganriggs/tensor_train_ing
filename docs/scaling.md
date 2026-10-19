@@ -650,6 +650,6 @@ At 1B and the base LR, spectral_rms matches pre_rms on both seeds: its 100M adva
 seed 101 pre_rms: 4.874 unclipped, 4.870 with QK-clip) lands ~10:30.
 **3× LR, seed 101 (10:15 Oct 19): spectral_rms 4.631 vs pre_rms 4.874 unclipped / 4.870 with QK-clip (−0.24).** That replicates seed 202
 (4.609 vs 4.966 with QK-clip). So spectral_rms ties pre_rms at the base LR on both seeds and is far more robust at high LR on both seeds, without
-QK-clip. The attention-score trace grows at 3× LR (max |S1·S2| ~5–7e4 near the end) but never diverges. Cost: throughput −8% (9.8k vs ~10.6k
+QK-clip. Stability at 3× LR (end of run; corrected 10:55, I had first misread the kurtosis column as scores): spectral keeps attention scores small (max |S1·S2| 590 / 930 on seeds 101 / 202, vs pre_rms+QK-clip pinned at the τ² = 1e4 cap). But its **MLP products are heavier-tailed**: excess kurtosis 48k / 23k vs 13k for pre_rms+QK-clip (both ~450–620 at the base LR). That doesn't hurt training. It does matter for low-precision inference or quantization (outlier features), so watch it on the H100 run. Cost: throughput −8% (9.8k vs ~10.6k
 tok/s after the 07:50 fix); QK-clip is unavailable for spectral models (not needed so far). Analysis cost favours spectral too: ablation distortion
 0.45 vs 1.64.

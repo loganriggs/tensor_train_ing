@@ -13,12 +13,12 @@ s67m:
 s101m:
   model: {d_model: 512, heads: 8, d_mlp: 1664, activation_checkpointing: false}
   lr: 0.0025
-  data_manifest: REQUIRED_12B_MANIFEST
+  data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed
 s191m:
   model: {d_model: 768, heads: 12, d_mlp: 2496, activation_checkpointing: false}
   lr: 0.0022
-  data_manifest: REQUIRED_12B_MANIFEST
+  data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed
 s304m:
   model: {d_model: 1024, heads: 16, d_mlp: 3392, activation_checkpointing: false}
   lr: 0.0020
-  data_manifest: REQUIRED_12B_MANIFEST
+  data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed

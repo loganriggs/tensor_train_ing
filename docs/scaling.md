@@ -696,3 +696,19 @@ s67m + checks, then chinchilla100m; s101m+ are added when the data lands.
 **Muon 1B, LR 3e-3 (15:34 Oct 19): 4.438** (2e-3: 4.448). So the 1B optimum is ≥3e-3, unbracketed above. Muon's optimal LR by width:
 512 ≈ 3.5e-3, 1024 ≈ 3.1e-3, 2048 ≥ 3e-3, essentially flat across a 4× width range: the spectral rule transfers the LR. **Muon vs the best AdamW at
 1B: −0.124** (4.438 vs 4.562). For the H100 config: start the Muon LR bracket at ~3e-3 (× the horizon factor), not lower.
+
+## Muon vs AdamW at a large batch (`configs/muon_bigbatch`; 101M, 131,072 tokens/update, 200M cooled tokens, seed 101; 18:30 Oct 19)
+| optimizer | LR | CE | tok/s |
+| --- | --- | ---: | ---: |
+| Muon | 3.5e-3 | 4.286 | 87.9k |
+| Muon | **7e-3** | **4.205** | 86.7k |
+| AdamW | **1.6e-3** | **4.249** | 88.1k |
+| AdamW | 3.1e-3 | 4.485 | 87.6k |
+
+- **Muon still wins at the large batch: −0.044** at the best points, vs −0.14 at 8k tokens/update. Neither optimum is bracketed (Muon's is the top
+  LR, AdamW's the bottom), so the true gap is uncertain in both directions. Follow-up `configs/muon_bigbatch2` (Muon 1.4e-2; AdamW 1.1e-3, 8e-4;
+  ~2 h) runs after the s38m grid size.
+- **Throughput is identical** (~87k tok/s), confirming that Muon's Newton–Schulz cost vanishes at large batch (measured ~2% at 262k).
+- **Muon's optimal LR grows with batch** (≥7e-3 at 131k vs ~3.5e-3 at 8k), roughly √(16) = 4× → ≤1.4e-2. AdamW's shrinks or holds (≤1.6e-3 vs a
+  scaled 7.8e-4 × √16 = 3.1e-3, which was clearly too high). So the critical-batch √-rule measured for AdamW does not transfer to Muon.
+- The grid stays on Muon (it runs at 8k tokens/update, where the gap is −0.14).

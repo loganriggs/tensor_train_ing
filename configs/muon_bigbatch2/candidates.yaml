@@ -1,0 +1,19 @@
+- name: muon_b131k_lr0.014_s101
+  overrides:
+    train:
+      lr: 0.014
+      seed: 101
+- name: adamw_b131k_lr0.0011_s101
+  overrides:
+    train:
+      optimizer: adamw
+      muon_adjust_lr: null
+      lr: 0.0011
+      seed: 101
+- name: adamw_b131k_lr0.0008_s101
+  overrides:
+    train:
+      optimizer: adamw
+      muon_adjust_lr: null
+      lr: 0.0008
+      seed: 101

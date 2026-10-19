@@ -661,3 +661,10 @@ tok/s after the 07:50 fix); QK-clip is unavailable for spectral models (not need
 - **Muon × spectral_rms: 4.646 vs Muon × pre_rms 4.645, a tie.** Compatible: it trains normally, but under Muon spectral's 100M advantage disappears
   (under AdamW it was −0.025). One seed. So the normalization choice and the optimizer choice don't add up; Muon dominates.
 1B Muon (2e-3, 3e-3) running; ~14:45.
+
+**Muon throughput (11:55 Oct 19):** on this GPU the 1B Muon run trains at **7.4k tok/s vs 10.2k for AdamW (−28%)**. That's an artifact of the
+small batch: this GPU does one optimizer update per 8,192 tokens, and Muon's Newton–Schulz costs about as much as the matrix's own fwd+bwd on
+8,192 tokens (≈5·(4m²n+2m³) vs 6mn·8192 FLOPs). GPU microbenchmark (2048×6784, bf16, alongside training): fwd+bwd 19.9 ms, `torch.optim.Muon`
+step 12.3 ms, so **62% per-matrix overhead at 8,192 tokens/update but ~1.9% at the H100's 262,144**. Muon's −0.14 equal-token advantage
+therefore costs about 2% throughput at H100 scale. At this GPU's batch, an equal-*compute* comparison would give AdamW ~1.38× tokens, so Muon's
+edge here is smaller than −0.14. Still untested: Muon at 262k tokens/update (critical batch was measured for AdamW only).

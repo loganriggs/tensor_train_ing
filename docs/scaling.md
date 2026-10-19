@@ -643,3 +643,8 @@ Muon's optimal LR drifts only as width^−0.16, vs AdamW's −0.39 under the ½ 
 check predicted. The gain *grows* slightly with width. **The 300M Muon model (4.514) beats the 1B AdamW model (4.564).** Muon's optimizer
 step costs extra (Newton-Schulz on every hidden matrix); throughput is compared in the 1B follow-up. Follow-up (`configs/muon_followup`, ~14:15):
 the 512 optimum above 4e-3, seed 202, and 1B at 2e-3/3e-3. Chinchilla 100M now has a Muon arm (LR 2.4e-3).
+
+## spectral_rms at 1B, second seed (`configs/spectral1b_s101`, 08:33 Oct 19)
+Base LR 4.5e-4, seed 101: **spectral_rms 4.569 vs pre_rms 4.564 (+0.006)**, with QK-clip τ=100 at 4.562. That replicates seed 202's tie (+0.009).
+At 1B and the base LR, spectral_rms matches pre_rms on both seeds: its 100M advantage (−0.025) doesn't carry to 1B. The 3× LR arm (robustness;
+seed 101 pre_rms: 4.874 unclipped, 4.870 with QK-clip) lands ~10:30.

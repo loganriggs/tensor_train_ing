@@ -178,3 +178,14 @@ def test_fit_lr_optimum_recovers_planted_power_law(tmp_path):
     res = flo.fit(flo.collect(runs, r"w(?P<group>\d+)ws_lr(?P<lr>[0-9.e-]+)_s101"))
     for w in (512, 1024, 2048):
         assert abs(res[w]["opt"] / (1e-3 * (w / 512) ** -0.5) - 1) < 1e-6 and res[w]["interior"]
+
+
+def test_throughput_uses_second_half(tmp_path):
+    d = tmp_path / "runA" / "parent"; d.mkdir(parents=True)
+    # slow first half (compile), then a steady 1000 tok/s
+    rows = [{"tokens": 0, "run_elapsed_seconds": 0}, {"tokens": 100, "run_elapsed_seconds": 50}] + \
+           [{"tokens": 100 + 1000 * k, "run_elapsed_seconds": 50 + k} for k in range(1, 5)]
+    (d / "metrics.jsonl").write_text("\n".join(map(json.dumps, rows)))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), str(tmp_path)],
+                         capture_output=True, text=True, check=True).stdout
+    assert "runA" in out and "1000 tok/s" in out

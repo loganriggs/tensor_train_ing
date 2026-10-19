@@ -18,6 +18,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 4b | `norm_cost_table.py LABEL=analysis.json ...` | Analysis-cost table per normalization package (5 metrics) |
 | 4c | `find_orphan_states.py [--keep ...]` | List checkpoints whose run already has an evaluation (deletion candidates; deletes nothing) |
 | 4d | `fit_lr_optimum.py [--pattern ...]` | Per-group LR optimum (quadratic in log LR) and power law of the optimum across groups |
+| 4d | `throughput.py RUN_DIR [...]` | Steady-state tokens/s per run (second half of metrics.jsonl); catches throughput regressions |
 | 5 | `export_results.py` | Weight-free mirror of runs/ into git-tracked results/ |
 | | `autocommit_results.sh` | Hourly export, commit and push of results/ (runs in the background) |
 

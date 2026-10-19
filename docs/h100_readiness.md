@@ -14,7 +14,7 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 | LR vs token horizon | **Done (09:39 Oct 18):** LR_opt ∝ D^−0.10; use ~3.5e-4 base LR (at width 512) for a 28B-token run | docs/scaling.md "LR vs token horizon" |
 | Global batch size (critical batch) | **Done (15:59 Oct 18):** no penalty to ≥128k tokens/update; scale LR ≤ √(batch ratio) | docs/scaling.md "Critical batch size" |
 | **Normalization package** (6 options; brief §1, never run) | **Queued next** (`configs/norm_screen`, 18 runs, ~4.5 h): runs before the batch/exponent experiments, which assume `pre_rms` | If `lagged` (fully polynomial) is close, that's the headline interpretability result |
-| Width exponent (is ½ right?) | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |
+| Width exponent (is ½ right?) — **done 03:53 Oct 19: optimal base LR drifts as width^−0.39; H100 LR corrected to 4e-4** | **Queued** (`configs/exponent_fit`, with QK-clip) | Refines the LR rule at 1B |
 | Behaviour at a compute-optimal horizon | **Not yet tested**: all runs ≤ 300M tokens | Plan: 100M model × ~2B tokens here (~8 h) before the rental |
 
 ## 2. Software for multi-GPU
@@ -102,8 +102,8 @@ seed and LR that diverged before (w2048, seed 202, LR 1.35e-3); (5) analysis cos
 (3)–(4) 1B stability without QK-clip running (`configs/spectral1b`, ~20:40).
 
 ### Ready-to-launch configs (22:30 Oct 18): `configs/h100/1b_pre_rms.yaml` (A) and `configs/h100/1b_spectral.yaml` (B)
-1.4B (24×2048), 28B tokens (~106k updates at 262k tokens/update), LR 7e-4 at width 512 (horizon rule × measured batch multiplier),
-sparse milestones. Day 1 fills in the GPU rate and the 28B-token manifests. **Day-1 LR bracket:** {5e-4, 7e-4, 1e-3} for ~1B tokens each on the
+1.4B (24×2048), 28B tokens (~106k updates at 262k tokens/update), LR **4e-4** (revised 04:00 Oct 19: horizon rule × width drift 0.58 × batch ×2),
+sparse milestones. Day 1 fills in the GPU rate and the 28B-token manifests. **Day-1 LR bracket:** {3e-4, 4e-4, 5.5e-4} for ~1B tokens each on the
 chosen variant, keep the best, then launch the full run. A vs B is the user's call (see docs/scaling.md, "spectral_rms at 1B").
 
 ### User preference (03:10 Oct 19)

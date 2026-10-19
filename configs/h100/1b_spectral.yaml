@@ -1,7 +1,7 @@
 # H100 run, 1.4B (24x2048), Chinchilla ~20 tokens/param = 28B tokens. Built 2026-10-18 from today's measurements:
-# - LR: horizon rule LR_opt(D) ~= 5.7e-4*(D/3e8)^-0.10 -> ~3.5e-4 at 28B (8k batch); critical batch: at 128k-256k tokens/update the best
-#   multiplier was ~x2 (x4 worse) -> lr 7e-4 at width 512 (width scaling applies (512/w)^0.5). UNCERTAIN: run the day-1 LR bracket
-#   {5e-4, 7e-4, 1e-3} for ~1B tokens each and keep the best (docs/h100_readiness.md).
+# - LR (revised 04:00 Oct 19): horizon rule -> ~3.5e-4 at 28B (width 512, 8k batch); exponent fit: under width_scaling_base the optimal
+#   base LR still drifts as width^-0.39 (512: 7.4e-4, 1024: 5.6e-4, 2048: 4.3e-4) -> x(2048/512)^-0.39 = 0.58; critical batch: ~x2 at
+#   128k-256k tokens/update -> lr 4e-4. UNCERTAIN: run the day-1 LR bracket {3e-4, 4e-4, 5.5e-4} for ~1B tokens each, keep the best.
 # - Batch 262144 tokens/update: within the measured no-penalty range (>=128k).
 # - Sparse log-spaced milestones (1B, 2B, 4B, ...) + 2 rolling recovery states; final + 90% branch kept.
 # Fill in on day 1: project.gpu_hourly_rate_usd, data.manifest / evaluation.validation_manifest (28B prep).
@@ -49,7 +49,7 @@ train:
   compile: true
   deterministic: false
   global_prediction_tokens_per_update: 262144
-  lr: 0.0007
+  lr: 0.0004
   optimizer: adamw
   qk_clip_every_steps: 0
   qk_clip_tau: 0.0

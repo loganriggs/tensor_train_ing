@@ -609,3 +609,18 @@ safety margin (3× base costs 0.044 vs QK-clip's 0.40), 3.7× lower analysis dis
 power iteration (2.7% of a step). `SpectralLinear.forward` now computes (γ/σ)·(W x) instead of materializing γW/σ each forward. Exact in FP64
 (test `test_spectral_linear_output_scaling_matches_effective_weight_exactly`). CPU proxy: 380 → 327 ms per fwd+bwd, overhead vs pre_rms ~21% → ~4%.
 The GPU effect is unmeasured: the 11% at 1B was measured before this change. Re-measure on the next GPU slot or the H100 day-1 canary.
+
+## Width-exponent fit (`configs/exponent_fit` + earlier sweeps; width-scaled, 12 layers, 50M cooled tokens, seed 101; finished 03:53 Oct 19)
+`scripts/fit_lr_optimum.py` (quadratic in log LR per width, 5 LRs each):
+
+| width | 3.2e-4 | 4.5e-4 | 6.4e-4 | 9e-4 | 1.35e-3 | fitted optimal *base* LR |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 512 | 4.836 | 4.801 | 4.798 | 4.787 | 4.814 | 7.4e-4 |
+| 1024 | 4.694 | 4.661 | 4.672 | 4.677 | 4.743 | 5.6e-4 |
+| 2048 | 4.564 | 4.564 | 4.605 | 4.649 | 4.874 | 4.3e-4 |
+
+**Under `width_scaling_base` (hidden LR × (512/w)^½), the optimal base LR still drifts as width^−0.39**, so the ½ exponent under-corrects. The
+total hidden-LR exponent is ≈ −0.89, between the ½ rule and textbook μP's 1/width. The curves are flat near the optimum (±√2 costs ≤0.01–0.04),
+which is why the ½ rule still beat the default everywhere. One seed. **Applied to the H100 configs:** base LR 7e-4 → **4e-4** (= horizon 3.5e-4 ×
+width drift 0.58 × batch ×2), with day-1 bracket {3e-4, 4e-4, 5.5e-4}. The exponent itself stays ½, because changing it would also change the coupled WD
+rule, which is untested at another exponent.

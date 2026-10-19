@@ -65,3 +65,15 @@ def test_worker_prunes_only_after_successful_scan_and_publishes(tmp_path):
     measured=json.loads(report.read_text())
     assert measured['accepted'] is False
     assert measured['minimum_train_tokens_met'] is True
+
+
+def test_per_shard_journal_accumulates_without_reopening_pruned_inputs(tmp_path):
+    raw=tmp_path/'raw'; raw.mkdir()
+    journal=tmp_path/'pruning.json'
+    for name in ('a','b'):
+        path=raw/f'{name}.parquet'; path.write_bytes(b'123')
+        m.prune_scanned_shards({'shards':[{'local':str(path)}]},raw,journal,append=True)
+    report=json.loads(journal.read_text())
+    assert report['bytes_removed']==6
+    assert len(report['removed'])==len(report['paths'])==2
+    assert not list(raw.iterdir())

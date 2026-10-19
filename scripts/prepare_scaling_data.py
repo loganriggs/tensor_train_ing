@@ -2,7 +2,7 @@
 
 Keep the source specification and report outside the immutable output directory.
 Only explicitly listed raw files below --prune-raw-root are removed, after the
-preparer has verified and scanned every source shard. Other raw files are kept.
+preparer has verified and completely scanned that shard. Other raw files are kept.
 """
 from __future__ import annotations
 import argparse
@@ -28,7 +28,7 @@ def sha(path):
     return h.hexdigest()
 
 
-def prune_scanned_shards(source, root, journal):
+def prune_scanned_shards(source, root, journal, *, append=False):
     """Restrict deletion to declared regular parquet files in the disposable tree."""
     root = Path(root).resolve(strict=True)
     if root in (Path('/'), ROOT, ROOT / 'data', ROOT.parent):
@@ -44,8 +44,12 @@ def prune_scanned_shards(source, root, journal):
         selected.append(path)
     if len(set(selected)) != len(selected):
         raise ValueError('duplicate local raw shard paths')
-    record = {'phase': 'source_scan_verified', 'root': str(root),
-              'paths': [str(p) for p in selected], 'removed': [], 'bytes_removed': 0}
+    record = (json.loads(Path(journal).read_text()) if append and Path(journal).exists() else
+              {'phase': 'verified_shards_scanned', 'root': str(root),
+               'paths': [], 'removed': [], 'bytes_removed': 0})
+    if record['root'] != str(root) or any(str(p) in record['paths'] for p in selected):
+        raise ValueError('pruning journal identity or duplicate mismatch')
+    record['paths'].extend(str(p) for p in selected)
     Path(journal).write_text(json.dumps(record, indent=2) + '\n')
     for path in selected:
         size = path.stat().st_size
@@ -57,16 +61,15 @@ def prune_scanned_shards(source, root, journal):
 
 
 def worker(args, source):
-    import tnlm.data_preparation as preparation
     from tnlm.data import prepare_data
-    original = preparation.ordered_tokenization
-    def staged_tokenization(*positional, **kwargs):
-        # This entrypoint runs only after all source hashes, the full source scan,
-        # conflict detection and held-out exclusion have completed successfully.
+    declared = {r['path']: r for r in source['shards']}
+    def shard_scanned(name, path):
+        # Called only after this complete shard's post-scan SHA and reader close.
         if args.prune_raw_root:
-            prune_scanned_shards(source, args.prune_raw_root, args.report.with_suffix('.pruning.json'))
-        yield from original(*positional, **kwargs)
-    preparation.ordered_tokenization = staged_tokenization
+            if Path(path).resolve() != Path(declared[name]['local']).resolve():
+                raise ValueError('scanned shard path differs from frozen source')
+            prune_scanned_shards({'shards': [declared[name]]}, args.prune_raw_root,
+                                args.report.with_suffix('.pruning.json'), append=True)
     def interrupted(signum, frame):
         raise KeyboardInterrupt('preparation stopped by disk guard or operator')
     signal.signal(signal.SIGTERM, interrupted)
@@ -75,7 +78,8 @@ def worker(args, source):
         hf_shard_checksums={r['path']: r['sha256'] for r in source['shards']},
         hf_local_shards={r['path']: r['local'] for r in source['shards']},
         max_tokens=args.max_tokens, max_documents=args.max_documents, workers=args.workers,
-        exclude_validation_manifest=args.heldout_manifest)
+        exclude_validation_manifest=args.heldout_manifest,
+        on_shard_scanned=shard_scanned if args.prune_raw_root else None)
 
 
 def main(argv=None):

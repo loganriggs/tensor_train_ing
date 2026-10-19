@@ -394,6 +394,8 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
             token_limit=token_limit, reachable_tokens=storage_plan['reachable_tokens'],
             include_branch=cooldown_steps is None and cfg.train.schedule != 'cosine'))
         history = deque(maxlen=history_limit)
+        previous_log_tokens = progress["tokens"]
+        previous_log_elapsed = 0.0
         slowest_step_seconds = 0.0
         completed_new_updates = completed_warmup_updates = 0
         model.train()
@@ -539,6 +541,12 @@ def train_run(cfg, run_dir, *, max_steps, max_seconds, device='cuda', resume=Non
                       "seconds": time.monotonic() - step_start,
                       "run_elapsed_seconds": time.monotonic() - started,
                       "run_billed_usd": (time.monotonic() - started) * rate / 3600}
+            # Wall-clock rate between log rows includes intervening saves/logging.
+            # Resume starts a new timing segment, excluding the parent's tokens.
+            record['tokens_per_second'] = ((record['tokens'] - previous_log_tokens) /
+                                          (record['run_elapsed_seconds'] - previous_log_elapsed))
+            previous_log_tokens = record['tokens']
+            previous_log_elapsed = record['run_elapsed_seconds']
             record.update(taper.metrics(anchor_total / valid_total))
             if score_bound_max is not None:
                 record['score_bound_max'] = score_bound_max

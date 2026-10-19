@@ -308,6 +308,8 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
         rolling = deque()
         history = deque(maxlen=int(project.get('history_limit', 1000)))
         last_recovery = time.monotonic()
+        previous_log_tokens = progress["tokens"]
+        previous_log_elapsed = 0.0
         slowest = 0.
         completed_updates = completed_warmup_updates = 0
         stop_reason = 'max_steps'
@@ -455,6 +457,12 @@ def distributed_train_run(cfg, run_dir, *, max_steps, max_seconds, device='cpu',
                       'lr': optimizer.param_groups[0]['lr'],
                       'optimizer_group_lrs': [group['lr'] for group in optimizer.param_groups],
                       'optimizer_exposure': progress['optimizer_exposure'], 'rounds': rounds, 'seconds': seconds}
+            # Wall-clock rate between log rows includes intervening saves/logging.
+            # Resume starts a new timing segment, excluding the parent's tokens.
+            record['tokens_per_second'] = ((record['tokens'] - previous_log_tokens) /
+                                          (record['run_elapsed_seconds'] - previous_log_elapsed))
+            previous_log_tokens = record['tokens']
+            previous_log_elapsed = record['run_elapsed_seconds']
             if score_bound_max is not None:
                 record['score_bound_max'] = score_bound_max
             record.update(taper.metrics(float(totals[3]) / accumulated))

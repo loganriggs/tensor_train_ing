@@ -35,11 +35,22 @@
       "elapsed_seconds": 205.72774509410374
     },
     "/workspace/tensor_train_ing/runs/spectral1b_s101/v1/w2048spec_lr0.00135_s101/w2048spec_lr0.00135_s101/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.6146868285604217,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 5245.0167879059445
+    },
+    "/workspace/tensor_train_ing/runs/spectral1b_s101/v1/w2048spec_lr0.00135_s101/w2048spec_lr0.00135_s101/cooldown": {
       "status": "running",
       "rate_usd_per_hour": 0.4219,
       "reserved_usd": 5.56908,
       "spent_usd": 0.0,
-      "parent_checkpoint": null,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/spectral1b_s101/v1/w2048spec_lr0.00135_s101/w2048spec_lr0.00135_s101/parent/milestone-000045003571",
       "cost_margin_fraction": 0.1,
       "stage": "C",
       "kind": "runtime"

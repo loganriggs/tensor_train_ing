@@ -648,3 +648,8 @@ the 512 optimum above 4e-3, seed 202, and 1B at 2e-3/3e-3. Chinchilla 100M now h
 Base LR 4.5e-4, seed 101: **spectral_rms 4.569 vs pre_rms 4.564 (+0.006)**, with QK-clip τ=100 at 4.562. That replicates seed 202's tie (+0.009).
 At 1B and the base LR, spectral_rms matches pre_rms on both seeds: its 100M advantage (−0.025) doesn't carry to 1B. The 3× LR arm (robustness;
 seed 101 pre_rms: 4.874 unclipped, 4.870 with QK-clip) lands ~10:30.
+**3× LR, seed 101 (10:15 Oct 19): spectral_rms 4.631 vs pre_rms 4.874 unclipped / 4.870 with QK-clip (−0.24).** That replicates seed 202
+(4.609 vs 4.966 with QK-clip). So spectral_rms ties pre_rms at the base LR on both seeds and is far more robust at high LR on both seeds, without
+QK-clip. The attention-score trace grows at 3× LR (max |S1·S2| ~5–7e4 near the end) but never diverges. Cost: throughput −8% (9.8k vs ~10.6k
+tok/s after the 07:50 fix); QK-clip is unavailable for spectral models (not needed so far). Analysis cost favours spectral too: ablation distortion
+0.45 vs 1.64.

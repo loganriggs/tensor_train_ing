@@ -23,6 +23,10 @@ def test_h100_config_invariants(path):
     else:
         assert c.train.optimizer == "adamw" and c.model.width_scaling_base == 512
     assert c.train.global_prediction_tokens_per_update >= 131072
+    # No discarded micro-batch rounds: a 4x2048 (or 16x512) micro-batch always holds >= 8160 targets (min 8165-8167 measured), so the quota must be a
+    # multiple of 8 ranks x 8160; 262144 read 1.25x the trained tokens (red-team 22:40 Oct 19).
+    assert c.raw["data"]["micro_batch_size"] * c.raw["data"]["context"] == 8192
+    assert c.train.global_prediction_tokens_per_update % (8 * 8160) == 0
     assert isinstance(c.train.rung_total_tokens, int) and c.train.rung_total_tokens > 1e10
     kept = sum(1 for _ in pending_milestone_tokens(c, start_tokens=0, token_limit=c.train.rung_total_tokens))
     assert kept <= 12, "sparse milestones required (the default keeps a full state every 100M tokens)"

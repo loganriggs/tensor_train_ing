@@ -42,6 +42,7 @@ def build(size: str, lr_mult: float, tpps: list[float], grid: Path = GRID, runs:
     cfg = json.loads(json.dumps(base))
     cfg["model"].update(spec["model"])
     cfg["data"]["manifest"] = spec["data_manifest"]
+    cfg["train"].update(spec.get("train", {}))  # per-size train overrides (e.g. the exact-fill batch for sizes started after 22:30 Oct 19)
     cfg["train"]["lr"] = spec["lr"] * lr_mult
     total, nonemb = param_counts(cfg["model"])
     batch = cfg["train"]["global_prediction_tokens_per_update"]
@@ -73,6 +74,19 @@ def result_tokens(run_dir: Path):
         return int(json.load(open(run_dir / "result.json"))["progress"]["tokens"])
     except (OSError, KeyError, ValueError):
         return None
+
+
+def read_past_one_epoch(run_dir: Path) -> str | None:
+    """Description if a finished stage read more input tokens than its training split holds (the sampler silently wraps into a 2nd epoch),
+    else None. Guards the 2026-10-19 finding: discarded micro-batch rows made runs read 1.96x the tokens they trained on."""
+    try:
+        r = json.load(open(run_dir / "result.json"))
+        seen = int(r["progress"]["input_tokens_seen"])
+        manifest = r["training_descriptor"]["configuration"]["data"]["manifest"]
+        avail = int(json.load(open(manifest))["tokens"]["train"])
+    except (OSError, KeyError, ValueError):
+        return None
+    return f"read {seen} input tokens > {avail} in the training split ({seen / avail:.2f} epochs)" if seen > avail else None
 
 
 def parent_dirs(out: Path) -> list[Path]:
@@ -139,6 +153,10 @@ def run(b: dict, device: str, max_seconds: float) -> int:
                        "--max-seconds", str(max_seconds), "--device", device] + extra, out / "parent.log")
         before = reached
         reached, (start, ckpt) = furthest_checkpoint(out, batch)
+        wrapped = read_past_one_epoch(run_dir)
+        if wrapped:
+            print(f"STAGE_FAILED {b['tag']}/{run_dir.name}: {wrapped}", flush=True)
+            return 1
         if reached <= before:
             print(f"STAGE_FAILED {b['tag']}/{run_dir.name} rc={rc} (no progress past {before} tokens)", flush=True)
             return rc or 1
@@ -157,6 +175,10 @@ def run(b: dict, device: str, max_seconds: float) -> int:
             rc = sh(cli + ["cooldown", "--config", str(cfg_path), "--resume", str(resume), "--cooldown-steps", str(steps),
                            "--cooldown-end-tokens", str(d), "--run-dir", str(cand / "cooldown"), "--max-steps", str(steps),
                            "--max-seconds", str(max_seconds), "--device", device], cand / "cooldown.log")
+            wrapped = read_past_one_epoch(cand / "cooldown")
+            if wrapped:
+                print(f"STAGE_FAILED {name}/cooldown: {wrapped}", flush=True)
+                return 1
             if rc or result_tokens(cand / "cooldown") != d:
                 print(f"STAGE_FAILED {name}/cooldown rc={rc} tokens={result_tokens(cand / 'cooldown')} expected={d}", flush=True)
                 return rc or 1

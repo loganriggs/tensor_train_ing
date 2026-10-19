@@ -46,7 +46,8 @@ project:
 train:
   compile: true
   deterministic: false
-  global_prediction_tokens_per_update: 262144
+  global_prediction_tokens_per_update: 261120  # = 4 rounds x 8 ranks x 8160. Each round, every rank draws one 4x2048 micro-batch
+  # (>= 8167 targets measured); 262144 needed a 5th round that was ~99% discarded (1.25x data read). Redo if the GPU count is not 8.
   lr: 0.0004
   optimizer: adamw
   qk_clip_every_steps: 50

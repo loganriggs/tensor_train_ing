@@ -1,0 +1,23 @@
+- name: c2048_muon_lr0.004_s101
+  overrides:
+    train:
+      lr: 0.004
+      seed: 101
+- name: c2048_adamw_lr0.0009_s101
+  overrides:
+    train:
+      optimizer: adamw
+      muon_adjust_lr: null
+      lr: 0.0009
+      seed: 101
+- name: c2048_spec_lr0.00078_s101
+  overrides:
+    model:
+      normalization: spectral_rms
+    train:
+      optimizer: adamw
+      muon_adjust_lr: null
+      lr: 0.00078
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0

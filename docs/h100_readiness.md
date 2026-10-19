@@ -3,6 +3,8 @@
 Goal: when the H100 node arrives, every GPU-hour goes into the main run, not into discovering problems. This lists what is verified on the
 single RTX 5000 Ada box, what can only be verified on the rental, and what is still open, with an owner for each.
 
+> **Red-team 22:45 Oct 19:** read `docs/redteam_2026-10-19.md` first (data-repetition bug, untested context 2048).
+
 ## 1. Recipe (what the big run should use)
 
 | Decision | Status | Evidence |
@@ -33,7 +35,7 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 
 | Item | Status | Owner |
 | --- | --- | --- |
-| Tokenized FineWeb | 320M tokens on disk; Chinchilla for the 1.4B pilot needs ~28B (~56 GB at 2 B/token) | |
+| Tokenized FineWeb | 13B on disk (`fineweb_13b_heldout`); the 1.4B pilot needs ~28B trained tokens. **Size it at 4 B/token** (int32): ~112 GB tokens + ~26 GB documents (corrected 22:45 Oct 19; was "56 GB at 2 B/token"). With the old 262144 quota the run would have READ 1.25x (35B); the configs now use 261120 (docs/redteam_2026-10-19.md A1) | |
 | `prepare_data` at scale | **Gap.** Single-threaded tiktoken plus in-memory ranking of all candidate documents. Fine at 320M; unproven at 28B (est. ~5 h single-threaded, memory unknown) | **Codex** (requested 02:10) |
 | Plan | Make it sharded/parallel, verify here on ~3B tokens (also feeds the 100M validation run), run the full 28B+ prep on the rental's CPUs on day 1 while kernels tune | |
 

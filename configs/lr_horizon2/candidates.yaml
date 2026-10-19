@@ -1,0 +1,20 @@
+- name: h300m_lr0.00032_s101
+  overrides:
+    train:
+      lr: 0.00032
+      rung_total_tokens: 299999232
+- name: h300m_lr0.00045_s101
+  overrides:
+    train:
+      lr: 0.00045
+      rung_total_tokens: 299999232
+- name: h300m_lr0.00064_s101
+  overrides:
+    train:
+      lr: 0.00064
+      rung_total_tokens: 299999232
+- name: h300m_lr0.0009_s101
+  overrides:
+    train:
+      lr: 0.0009
+      rung_total_tokens: 299999232

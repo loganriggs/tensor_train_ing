@@ -341,3 +341,15 @@ def test_fit_scaling_law_recovers_chinchilla_parameters():
     assert abs(f["alpha"] - 0.34) < 0.02 and abs(f["beta"] - 0.28) < 0.02 and abs(f["E"] - 1.69) < 0.05, f
     o, ref = fsl.optimal(f, 1e21), fsl.optimal(true, 1e21)
     assert abs(math.log(o["tokens_per_param"] / ref["tokens_per_param"])) < 0.15, (o, ref)  # within ~15%
+
+
+def test_scaling_grid_detects_reading_past_one_epoch(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import scaling_grid as g
+    manifest = tmp_path / "manifest.json"; manifest.write_text(json.dumps({"tokens": {"train": 1000}}))
+    for seen, expect in ((900, None), (1960, "1.96 epochs")):
+        d = tmp_path / f"run{seen}"; d.mkdir()
+        (d / "result.json").write_text(json.dumps({"progress": {"input_tokens_seen": seen, "tokens": 1000},
+                                                  "training_descriptor": {"configuration": {"data": {"manifest": str(manifest)}}}}))
+        msg = g.read_past_one_epoch(d)
+        assert (msg is None) if expect is None else (expect in msg), msg

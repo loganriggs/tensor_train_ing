@@ -1,3 +1,7 @@
+# BATCH (22:30 Oct 19): the trainer fills each update's target quota with whole 16x512 micro-batches and discards the rest of the last one.
+# A micro-batch holds 8165-8197 targets (rows 509-512; 2000 sampled: min 8165, median 8180), so 8192 targets/update needs a 2nd micro-batch
+# almost every update: input read = 1.96x tokens trained (the sampler silently wraps into epoch 2 when data runs out). 8160 never needed one
+# in 2000 samples (1.0025x). Sizes not yet started use 8160; s38m (running; fits: 2.99B of 3.01B input) and its LR checks keep 8192.
 # Muon LR per size, set for the geometric-middle budget (~14 tokens/param): measured 50M-token optima 3.5e-3 (w512), 3.1e-3 (w1024), drift
 # width^-0.16 (w256/w384/w768 extrapolated: 3.9e-3 / 3.7e-3 / 3.3e-3); times the horizon factor (14N / 50M)^-0.10 (rule measured for AdamW;
 # Muon's own is checked by the chinchilla100m Muon arm and the s38m/s67m LR checks at x0.5 / x2).
@@ -7,18 +11,22 @@ s38m:
   lr: 0.0031
   data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
 s67m:
+  train: {global_prediction_tokens_per_update: 8160}
   model: {d_model: 384, heads: 6, d_mlp: 1248, activation_checkpointing: false}
   lr: 0.0028
   data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
 s101m:
+  train: {global_prediction_tokens_per_update: 8160}
   model: {d_model: 512, heads: 8, d_mlp: 1664, activation_checkpointing: false}
   lr: 0.0025
   data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed
 s191m:
+  train: {global_prediction_tokens_per_update: 8160}
   model: {d_model: 768, heads: 12, d_mlp: 2496, activation_checkpointing: false}
   lr: 0.0022
   data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed
 s304m:
+  train: {global_prediction_tokens_per_update: 8160}
   model: {d_model: 1024, heads: 16, d_mlp: 3392, activation_checkpointing: false}
   lr: 0.0020
   data_manifest: /workspace/tensor_train_ing/data/fineweb_13b_heldout/manifest.json  # Codex 13B set: use only after runs/codex_data_13b/audit.json status=passed

@@ -1,6 +1,7 @@
 """Steady-state training throughput (tokens/s) of one or more runs, from their metrics.jsonl.
 
     python scripts/throughput.py RUN_DIR_OR_METRICS [...] [--last N]   (--last: rate over the last N logged rows, for a live run)
+    python scripts/throughput.py --drop METRICS                     (prints recent/steady ratio; stability_watch.sh flags < 0.8)
 
 Uses the second half of the logged rows (after compile and warm-up). For each argument, a directory is searched for every
 `**/parent/metrics.jsonl` (the trained parent; branch rows are cooldown continuations). Used to catch throughput regressions
@@ -20,7 +21,20 @@ def steady_rate(path, last: int | None = None) -> float | None:
     return (b["tokens"] - a["tokens"]) / dt if dt > 0 else None
 
 
+def drop_ratio(path, last: int = 20, min_rows: int = 40) -> float | None:
+    """Recent rate (last N rows) / steady-state rate (second half); < ~0.8 means the run slowed down. None while the run is too short."""
+    rows = sum(1 for _ in open(path))
+    if rows < min_rows:
+        return None
+    recent, steady = steady_rate(path, last), steady_rate(path)
+    return recent / steady if recent and steady else None
+
+
 def main(argv):
+    if argv[:1] == ["--drop"]:
+        r = drop_ratio(argv[1])
+        print("n/a" if r is None else f"{r:.3f}")
+        return
     last = None
     if "--last" in argv:
         i = argv.index("--last"); last = int(argv[i + 1]); argv = argv[:i] + argv[i + 2:]

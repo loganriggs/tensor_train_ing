@@ -311,3 +311,12 @@ def test_scaling_grid_continues_a_time_capped_parent(tmp_path):
     assert r.returncode == 0 and "GRID_DONE tiny" in r.stdout, r.stdout + r.stderr
     ev = json.load(open(next(out.glob("*/evaluation/evaluation.json"))))
     assert ev["training_descriptor"]["actual_prediction_tokens"] == ev["training_descriptor"]["rung_total_tokens"]
+
+
+def test_throughput_drop_ratio(tmp_path):
+    f = tmp_path / "metrics.jsonl"
+    rows = [{"tokens": 1000 * k, "run_elapsed_seconds": k} for k in range(60)]
+    rows += [{"tokens": 59000 + 500 * k, "run_elapsed_seconds": 59 + k} for k in range(1, 21)]  # last 20 rows at half speed
+    f.write_text("\n".join(map(json.dumps, rows)))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), "--drop", str(f)], capture_output=True, text=True, check=True).stdout
+    assert float(out) < 0.8

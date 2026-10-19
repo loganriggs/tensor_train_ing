@@ -656,7 +656,7 @@ tok/s after the 07:50 fix); QK-clip is unavailable for spectral models (not need
 
 **Muon follow-up, width-512 results (11:15 Oct 19):**
 - Optimum bracketed: LR 8e-3 → 4.743 (vs 4e-3 4.645), so the optimum is ≈3.5e-3, inside the range.
-- **Second seed replicates:** Muon 4e-3 seed 202 **4.637** vs the best AdamW seed-202 point at this width, 4.770 (pre_rms, 7.8e-4, norm follow-up): **−0.133**
+- **Second seed replicates:** Muon 4e-3 seed 202 **4.637** vs the best AdamW pre_rms seed-202 point at this width, 4.770 (7.8e-4, norm follow-up): **−0.133** (vs AdamW spectral_rms 4.745: −0.107)
   (seed 101: −0.14).
 - **Muon × spectral_rms: 4.646 vs Muon × pre_rms 4.645, a tie.** Compatible: it trains normally, but under Muon spectral's 100M advantage disappears
   (under AdamW it was −0.025). One seed. So the normalization choice and the optimizer choice don't add up; Muon dominates.

@@ -624,3 +624,10 @@ total hidden-LR exponent is ≈ −0.89, between the ½ rule and textbook μP's 
 which is why the ½ rule still beat the default everywhere. One seed. **Applied to the H100 configs:** base LR 7e-4 → **4e-4** (= horizon 3.5e-4 ×
 width drift 0.58 × batch ×2), with day-1 bracket {3e-4, 4e-4, 5.5e-4}. The exponent itself stays ½, because changing it would also change the coupled WD
 rule, which is untested at another exponent.
+
+## Muon with spectral scaling: LR transfer (`configs/muon_transfer`, preliminary; 05:00 Oct 19)
+**Width 512 (~100M), 50M cooled tokens, seed 101, same data/eval as every screen:** Muon LR 1e-3 → 4.803, 2e-3 → 4.675, **4e-3 → 4.646**,
+vs the best AdamW at this width **4.787** (LR 9e-4): **−0.14**. That beats AdamW at *twice* the width (1024: 4.661). It's still improving at the
+top LR, so the optimum is >4e-3. Stable (max |S1·S2| ≈ 0.2k; no stability flags). Verified like-for-like: same training/validation manifests,
+50.0M prediction tokens, cooled, 1M evaluation targets. Far larger than the literature's 1.1–1.4× expectation; one seed. Width 1024 runs
+pending (~06:15) for the transfer question.

@@ -1,0 +1,848 @@
+{
+  "comparison_pairs": [],
+  "cost_scope": "cap-based estimates include all declared stages; each stage independently admits/bills actual elapsed time; orchestration/hash/comparison/summary overhead unbilled",
+  "disk_admission": {
+    "free_bytes": 120519614464,
+    "required_bytes": 3354954648,
+    "reserve_bytes": 67108864
+  },
+  "dry_run": false,
+  "identity": {
+    "controls": {
+      "bootstrap_samples": 1000,
+      "comparison_seed": 0,
+      "cooldown": true,
+      "device": "cuda",
+      "evaluation_context": 512,
+      "evaluation_max_seconds": 1800.0,
+      "evaluation_seed": 0,
+      "max_prediction_tokens": 1000000,
+      "max_seconds": 43200.0,
+      "prune_completed_intermediates": true,
+      "reference_candidate": "w512muon_lr0.004_s101",
+      "throughput_canary": {
+        "measured_steps": 60,
+        "min_tokens_per_second": 2500.0,
+        "scope": "first measured parent updates after explicitly excluded warmup; sum targets / sum step seconds; no extra training trajectory",
+        "warmup_steps": 20
+      }
+    },
+    "out_dir": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101",
+    "runtime_source_sha256": {
+      "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "analysis.py": "7c38cb4ac96debe1d85894acaa5d346c61109a12ad812bb818cc75865d67b3c3",
+      "attention.py": "9ef42707b86b3ec36c325772e57341e42a6c8a09f4bc649a63c8c4bee49600f0",
+      "batch_branch.py": "9f8185948c523ab18d90922b6ac3de691827e683811aaa3838b87113e60ebdbb",
+      "budget.py": "9d28c85a21623b74401e577587db000e79cf0bf7d3ef138b1ae61f98af93aead",
+      "calibration.py": "813955c83f4533278afef8122fd299474845723b23d69f355052f143074c392e",
+      "checkpoint.py": "cea8d3c72fd0aa9785414b4d6a8f75d778e69726d0e9e79cc97a3c86d7bea8b0",
+      "checkpoint_plan.py": "65ae14cf86037a4a05680977e0130d583bc461534b950f421de7453e9f3d57be",
+      "checkpoint_storage.py": "0f97397d3ab6357b30cd976f7d8ad43401087122bf9dc698ef3336882c64f245",
+      "cli.py": "a06b670795968862e4b33fed7484e454ed0a4729130e112989a7fea994dc7e67",
+      "comparison_batch.py": "c952edb1e0b569df275766584aea25689719b062f33fd9e1bd9f61480bc9abb8",
+      "config.py": "7357bba27c59b0b3a86cd50aaa6f18e5f446fef4cc68132c1dc328686e48c96a",
+      "coordcheck.py": "14e56d168a4cc94872eef8fe016e5702f82274068324481821d839fe53cd7210",
+      "data.py": "4e10decd966b3f5dc601c033b7dc963debde679bac39d2c01ce98b0da42a5d6f",
+      "data_preparation.py": "4895f8684bda77edba1ae8382eeea1ec5b60dfb1236f9ddb959cf467a2d32e2a",
+      "distributed_checkpoint.py": "98be222f02726c57b2d3fb7e9539cedfe9f63d0f666b113c8766e79aa8a2567e",
+      "distributed_train.py": "6344d7bce527d3de8b5ec97e80623f2e32d8914a2464fb332d29215806369cf5",
+      "evaluate.py": "c139ff990b65c40e0e28e2c4c2acbb8d49e7114e599f2a4820145135aa0d9dc7",
+      "initialization.py": "ff20dc0582e11393d5378bb4da888932c84ecada5ff0d0d3c88dc7d373bdbc37",
+      "kernels/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kernels/fused_ce.py": "3283a8da1463812c15818be0effdd8d328c1d559f7b5dc8ced0698c3d956424b",
+      "kernels/poly_attn.py": "35f99e500b10d3916ded91f38eec3654372d87a610906ff41cef0dce76364b5e",
+      "kernels/tune.py": "067b0e15883094018f86d473a6272d1c396fd7adffa0d91c6b60b94ccc510016",
+      "model.py": "2c2ee8b62d9df9bb4df17ff766b0867c162469868a0cec766aa5c4f41ee8a5b1",
+      "normalization.py": "5cbd1c2a214f6a041fe9fcbbdc2eb14edce927b7cbcd6f0e2007c9fdba2e3605",
+      "optim.py": "69f8597b4dd4c001441028c15b33988ec91c81932f09d3883e61544abb1420aa",
+      "optimizer_exposure.py": "c7e6431efda3bd7abd4fa4623db55c909ebc6ccc0087de0c627a7112bf30aeb6",
+      "parallel.py": "cd4912e70d30cc4bc807474df7832e7c6d80d73833791cf1c7c3380f9547822f",
+      "profiling.py": "97d4c485d24ba5943c44296ce1e88c4cac6a1408aedac96d6c8e8664594ee08e",
+      "qk_clip.py": "0ab4a6d334b6e710ba8b7379c6ef4059860a0574cf69ac1af3273bee82b885eb",
+      "replication.py": "57880e21155321ee3a248d5b46afbfb69248e012c8ea6ae67095ea33df4519c2",
+      "reporting.py": "4ae86d9c7d666d3feb6198393b1059b258acdfe9c39a710f6d133de121d534ad",
+      "runtime.py": "6e98f26da3538d442d36bcefda080d9f2d3f5f2f503fe28d83da79ffbfc63301",
+      "sampler_index.py": "c8dfa41c933e60d52faf9a419fee7a58411b1efb05021779fd6f0c291fee106a",
+      "schedules.py": "7c77c98a9e75b1c9f3528e01fa411d8938890902d6d333b7eea37ac04c01426e",
+      "search.py": "1ca18f686aa379598e99845f42972c21dbc974f9946f51afa3a440aea44fd298",
+      "shapes.py": "722781c71c12687af3457fe9994b82e4e4466ddd2dee07c48b32ba52cb523a27",
+      "sharded_initialization.py": "b3d4ec46addb3e6f2a1c7a7610b2bfe61b5dcef72e82ef97f461cab7f14d2fbc",
+      "source_snapshot.py": "9cc84772f72df15e5607333387cdbdfd61e5d58029b9f170f67f243599ddaecd",
+      "sweep.py": "bc6f480c74181f231d817529bf24e1201e306806902cdcaeb8672dbf08161320",
+      "sweep_config.py": "41c185b67afad56d1912bd74393248e8651649d612b298a40ca6b7efe7f235bf",
+      "sweep_retention.py": "e13b42be15d9756c235225ab8394afa00a272c1c8ff5de75cfe76ff1910a66e9",
+      "tasks.py": "1fd3765f6a2f5688ae985123b14bd5ba181ead99293f9e4dfb2af386b14eb52f",
+      "throughput_canary.py": "9dcf3f52e6729f623939650b0b41680a1402f1e3b7b9a8f611765a78d00ba671",
+      "token_format.py": "a3f47259e9c2746ca66032b4b54631527cf102b7490900347451c7dfb3e14ba9",
+      "train.py": "da92383f6703747e08ca5d5768275d9b3875f9e0ac01287fa8fdca9ac11a2e02",
+      "training_stability.py": "7ed89db1c148a5121e79a155df28c1df412f6645e76cb565e18b84ee21ce2a10",
+      "training_taper.py": "260fa3e39c0af0fd983e912a432f5a25493b367de54d82e566a4c1a2ca8311e4"
+    },
+    "trajectories": [
+      {
+        "branch_threshold": 45003571,
+        "branch_tokens": 45006848,
+        "config": {
+          "data": {
+            "context": 512,
+            "manifest": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json",
+            "micro_batch_size": 16
+          },
+          "evaluation": {
+            "seed": 0,
+            "validation_manifest": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json"
+          },
+          "model": {
+            "activation_checkpointing": false,
+            "attention": "signed_product",
+            "attention_backend": "auto",
+            "attn_row_power": null,
+            "d_key": 64,
+            "d_mlp": 1664,
+            "d_model": 512,
+            "d_value": 64,
+            "depth_lr_exponent": 0.5,
+            "depth_residual_base": null,
+            "depth_residual_exponent": 1.0,
+            "depth_scaling_base": null,
+            "dropout": 0.0,
+            "final_normalization": "rms",
+            "fp32_scores": true,
+            "heads": 8,
+            "initialization": "explicit_fan_in_with_depth_scaled_outputs",
+            "lagged_half_life_tokens": 1000000.0,
+            "layers": 12,
+            "loss_chunk_tokens": 4096,
+            "mlp": "bilinear",
+            "norm_groups": 4,
+            "normalization": "pre_rms",
+            "offset_square_b": 1.0,
+            "padded_vocab": 50304,
+            "position_encoding": "rope",
+            "qk_init_scale": 1.0,
+            "qk_norm": false,
+            "residual_alpha": 1.0,
+            "rms_eps": 1e-06,
+            "rope_base": 10000.0,
+            "taper_ema_rate": 0.01,
+            "tie_embeddings": false,
+            "vocab_size": 50257,
+            "width_logit_exponent": 0.5,
+            "width_lr_exponent": 0.5,
+            "width_scaling_base": null
+          },
+          "project": {
+            "dry_run": false,
+            "gpu_hourly_rate_usd": 0.4219,
+            "keep_recovery_checkpoints": 0,
+            "milestone_tokens": [],
+            "reserve_usd": 150,
+            "save_initial_checkpoint": false,
+            "spend_ledger": "/workspace/tensor_train_ing/runs/muon_transfer/spend.json",
+            "stage": "C",
+            "total_budget_usd": 1000
+          },
+          "train": {
+            "aux_adamw_lr": 0.00045,
+            "beta1": 0.9,
+            "beta2": 0.9872585449,
+            "bf16_compute": true,
+            "compile": true,
+            "cooldown_fraction": 0.1,
+            "deterministic": false,
+            "fp32_norm_reductions": true,
+            "fp32_optimizer_state": true,
+            "global_prediction_tokens_per_update": 8192,
+            "grad_clip": 1.0,
+            "lr": 0.004,
+            "muon_adjust_lr": "spectral_unclamped",
+            "muon_momentum": 0.95,
+            "optimizer": "muon",
+            "qk_clip_every_steps": 50,
+            "qk_clip_source": "probe",
+            "qk_clip_tau": 100.0,
+            "rung_total_tokens": 50003968,
+            "schedule": "constant_with_separate_cooldown",
+            "seed": 101,
+            "stability_every_steps": 500,
+            "taper_anchor_lambda": 0.1,
+            "taper_end_fraction": 1.0,
+            "weight_decay_hidden": 0.1
+          }
+        },
+        "config_sha256": "8d14cc43decf8e294761afbcaf9f294fb6e450125be4ee5eddb209cc3af847e0",
+        "cooldown_end_tokens": 50003968,
+        "cooldown_steps": 610,
+        "cooldown_storage_plan": {
+          "assumptions": [
+            "mature optimizer state even for initial checkpoint",
+            "scheduled/time-based recovery may occur every reachable update",
+            "one extra recovery staging copy before pruning when recovery saves are enabled",
+            "persistent distributed buffers conservatively replicated on every rank",
+            "DCP model parameter aliases counted separately by FQN; portable exports deduplicate storage",
+            "10% serialization margin plus 1MiB overhead per rank checkpoint",
+            "existing artifacts and unbounded concurrent pinned old recoveries excluded",
+            "arbitrary metadata/code beyond fixed allowance and filesystem allocation excluded",
+            "optional export is additional weight-only artifact; time caps may reduce updates"
+          ],
+          "checkpoint_count": 1,
+          "checkpoint_retention_policy": {
+            "keep_recovery_checkpoints": 0,
+            "save_initial_checkpoint": false
+          },
+          "count_breakdown": {
+            "final": 1,
+            "initial": 0,
+            "milestones": 0,
+            "rolling_recovery_including_staging": 0,
+            "separate_90_percent_branch": 0
+          },
+          "distributed": false,
+          "dtype": "torch.float32",
+          "export_weights_estimate_bytes": 0,
+          "kind": "checkpoint_storage_projection",
+          "metadata_allowance_bytes_per_rank_checkpoint": 1048576,
+          "milestone_policy": {
+            "mode": "explicit",
+            "tokens": []
+          },
+          "per_checkpoint_estimate_bytes": 1118318216,
+          "reachable_tokens": 50003968,
+          "reachable_updates": 610,
+          "required_additional_bytes": 1118318216,
+          "scope": "advisory projection, not guaranteed upper bound; no reservation or deletion",
+          "start_tokens": 45006848,
+          "tensor_bytes_breakdown": {
+            "distributed_shard_padding_allowance": 0,
+            "optimizer_moments": 610373632,
+            "optimizer_step_scalars": 216,
+            "parameters": 404277248,
+            "persistent_buffers": 0
+          },
+          "token_limit": 50003968,
+          "world_size": 1
+        },
+        "data": {
+          "training": {
+            "path": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json",
+            "sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5"
+          },
+          "validation": {
+            "path": "/workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json",
+            "sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5"
+          }
+        },
+        "name": "w512muon_lr0.004_s101",
+        "parent_steps": 6104,
+        "parent_storage_plan": {
+          "assumptions": [
+            "mature optimizer state even for initial checkpoint",
+            "scheduled/time-based recovery may occur every reachable update",
+            "one extra recovery staging copy before pruning when recovery saves are enabled",
+            "persistent distributed buffers conservatively replicated on every rank",
+            "DCP model parameter aliases counted separately by FQN; portable exports deduplicate storage",
+            "10% serialization margin plus 1MiB overhead per rank checkpoint",
+            "existing artifacts and unbounded concurrent pinned old recoveries excluded",
+            "arbitrary metadata/code beyond fixed allowance and filesystem allocation excluded",
+            "optional export is additional weight-only artifact; time caps may reduce updates"
+          ],
+          "checkpoint_count": 2,
+          "checkpoint_retention_policy": {
+            "keep_recovery_checkpoints": 0,
+            "save_initial_checkpoint": false
+          },
+          "count_breakdown": {
+            "final": 1,
+            "initial": 0,
+            "milestones": 1,
+            "rolling_recovery_including_staging": 0,
+            "separate_90_percent_branch": 0
+          },
+          "distributed": false,
+          "dtype": "torch.float32",
+          "export_weights_estimate_bytes": 0,
+          "kind": "checkpoint_storage_projection",
+          "metadata_allowance_bytes_per_rank_checkpoint": 1048576,
+          "milestone_policy": {
+            "mode": "explicit",
+            "tokens": []
+          },
+          "per_checkpoint_estimate_bytes": 1118318216,
+          "reachable_tokens": 50003968,
+          "reachable_updates": 6104,
+          "required_additional_bytes": 2236636432,
+          "scope": "advisory projection, not guaranteed upper bound; no reservation or deletion",
+          "start_tokens": 0,
+          "tensor_bytes_breakdown": {
+            "distributed_shard_padding_allowance": 0,
+            "optimizer_moments": 610373632,
+            "optimizer_step_scalars": 216,
+            "parameters": 404277248,
+            "persistent_buffers": 0
+          },
+          "token_limit": 50003968,
+          "world_size": 1
+        },
+        "paths": {
+          "cooldown": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/cooldown",
+          "evaluation": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/evaluation",
+          "parent": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/parent"
+        },
+        "reservation_cap_based_usd": 11.370205000000002,
+        "runtime_cap_based_usd": 10.33655,
+        "tokens": 50003968
+      }
+    ],
+    "version": 1
+  },
+  "identity_sha256": "4c1d1f50165183df64ec9e009adc61fca6fefedfb2aa47b7ec3afc95c3f880da",
+  "kind": "frozen_sweep_execution",
+  "pending_retention_forecast": {
+    "candidates": [
+      {
+        "name": "w512muon_lr0.004_s101",
+        "new_active_full_peak_bytes": 3354954648,
+        "new_candidate_peak_bytes": 3354954648,
+        "new_prior_retained_bytes": 0,
+        "new_retained_initial_final_bytes": 2236636432
+      }
+    ],
+    "new_final_retained_bytes": 2236636432,
+    "required_additional_bytes": 3354954648,
+    "scope": "advisory max of cumulative newly retained initial/final estimates plus active candidate full peaks; already-completed stages excluded; no existing reclamation credit; non-checkpoint metadata allowance/exclusions inherit checkpoint plans"
+  },
+  "prune_operations": {
+    "w512muon_lr0.004_s101": {
+      "files": {
+        "w512muon_lr0.004_s101/parent/milestone-000045003571/state.pt": {
+          "artifact": "milestone-000045003571/state.pt",
+          "bytes": 1014797299,
+          "sha256": "45b68ed996d5623261ebfd48d8de1e9474c0fe3ba5450bc56a1bfdf1440e68fb",
+          "stage": "w512muon_lr0.004_s101/parent"
+        }
+      },
+      "original_payload_bytes": 1014797299,
+      "scope": "only completed direct milestone/recovery state.pt payloads; manifests/provenance preserved",
+      "status": "complete"
+    }
+  },
+  "required_additional_bytes": 3354954648,
+  "reservation_cap_based_usd": 11.370205000000002,
+  "retention_forecast": {
+    "candidates": [
+      {
+        "name": "w512muon_lr0.004_s101",
+        "new_active_full_peak_bytes": 3354954648,
+        "new_candidate_peak_bytes": 3354954648,
+        "new_prior_retained_bytes": 0,
+        "new_retained_initial_final_bytes": 2236636432
+      }
+    ],
+    "new_final_retained_bytes": 2236636432,
+    "required_additional_bytes": 3354954648,
+    "scope": "advisory max of cumulative newly retained initial/final estimates plus active candidate full peaks; already-completed stages excluded; no existing reclamation credit; non-checkpoint metadata allowance/exclusions inherit checkpoint plans"
+  },
+  "retention_scope": "final, any configured initial, and all metadata retained; completed milestone/recovery payloads no longer resumable",
+  "runtime_cap_based_usd": 10.33655,
+  "runtime_cap_cost_scope": "rate times declared per-stage time caps, not guaranteed upper bound: steps/checkpoints may overrun; ledger actuals authoritative",
+  "scope": "full configured schedule plus separately billed optional cooldown/evaluation; constant parents permit continuation, cosine horizon is fixed; no final test",
+  "stages": {
+    "summary": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 427,
+          "sha256": "a19270fbf0e786ad3b8048e37b3a7a4e1943a477ad53f22fccf8c6499f828463"
+        },
+        "comparison.csv": {
+          "bytes": 1848,
+          "sha256": "d129ac9b51957393ca8fbeee5f1fbdc5844fcb9dcb29d6a6982dcd9d75f1eadf"
+        },
+        "comparison.json": {
+          "bytes": 458444,
+          "sha256": "51d08ad108554b15e0069456aa83a55e209eedec79c37558f996b11b7e28dbd0"
+        },
+        "loss-vs-cost.svg": {
+          "bytes": 75726,
+          "sha256": "05b09e5dc332becccd0fc6fed41eb8bbca9758c6a4cad547ee0049f178262a2e"
+        },
+        "loss-vs-time.svg": {
+          "bytes": 74655,
+          "sha256": "e5d9388b584d85d1fc1b2939a298f8ef15aa4ad21140f25e301cf340c24b62c1"
+        },
+        "loss-vs-tokens.svg": {
+          "bytes": 75506,
+          "sha256": "616fca43393ecd3a81174e6e07ff731c24392981e0629f84e7d9d867db2d58a2"
+        },
+        "validation.json": {
+          "bytes": 872,
+          "sha256": "508602424b47a400ca617b4360ecabe412fcb7cebda07120b6e20de4ce154093"
+        }
+      },
+      "billing": null,
+      "result": {
+        "artifacts": [
+          "comparison.csv",
+          "comparison.json",
+          "loss-vs-cost.svg",
+          "loss-vs-time.svg",
+          "loss-vs-tokens.svg"
+        ],
+        "cost_scope": "per run segment, includes setup/compilation/checkpoints; parent cost not silently combined",
+        "metric": "training cross entropy; not held-out model quality",
+        "output": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/summary",
+        "runs": 2
+      },
+      "status": "complete"
+    },
+    "w512muon_lr0.004_s101/cooldown": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 322,
+          "sha256": "e2754675a51c085da84dc7c088af4a1126822c6cdaa3a135bd9e117cc5591d92"
+        },
+        "checkpoint_storage_plan.json": {
+          "bytes": 2062,
+          "sha256": "f7322e20c7eacebc8163ed9d87ef82ef2a54b2dd8459ab56936a5d8b308452ce"
+        },
+        "final/manifest.json": {
+          "bytes": 694,
+          "sha256": "510b17341f5a37005ce3f1f475bb2198c15af6874aa39fc5cf2cd313dd2fcdc4"
+        },
+        "final/state.pt": {
+          "bytes": 1014797683,
+          "sha256": "a763b6deb1444ef38416544e6145da51ff01b310d4ff1e91516d9899ce477a4e"
+        },
+        "metrics.jsonl": {
+          "bytes": 5375586,
+          "sha256": "8d9846eb9044ce10195d72a20afd6b04369e91d57ebe164c0be08f41d575d74e"
+        },
+        "result.json": {
+          "bytes": 16407833,
+          "sha256": "cd86bfac0e92f9b132abf866a70e468a50014362b54202e8037bd723f0dc3b08"
+        }
+      },
+      "billing": {
+        "ledger": "/workspace/tensor_train_ing/runs/muon_transfer/spend.json",
+        "run_id": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/cooldown",
+        "spent_usd": 0.011205346384297103
+      },
+      "result": {
+        "manifest_sha256": "510b17341f5a37005ce3f1f475bb2198c15af6874aa39fc5cf2cd313dd2fcdc4",
+        "path": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/cooldown/final",
+        "state_sha256": "a763b6deb1444ef38416544e6145da51ff01b310d4ff1e91516d9899ce477a4e",
+        "tokens": 50003968
+      },
+      "status": "complete"
+    },
+    "w512muon_lr0.004_s101/evaluation": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 553,
+          "sha256": "b2188523e37e94366d24e77ed775295a769f6da6fb9a786c562e0959efb907ad"
+        },
+        "data-overlap-audit.json": {
+          "bytes": 857,
+          "sha256": "2ca3e09d45838684d43390a837803b6ab222a0d39c54e2e829f258f3df086a99"
+        },
+        "evaluation.json": {
+          "bytes": 510231,
+          "sha256": "a191788f179163875e3433fc4c7e8e887fdccd4bb096c39a801630d856af954f"
+        }
+      },
+      "billing": {
+        "ledger": "/workspace/tensor_train_ing/runs/muon_transfer/spend.json",
+        "run_id": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/evaluation",
+        "spent_usd": 0.006798098379130544
+      },
+      "result": {
+        "available_prefix_plan_sha256": "532e717ac17ff1c98d2c25555fa3316ab3e8900fead8b9b109704f921e2a82cb",
+        "ce": 4.645455041760095,
+        "checkpoint_manifest_sha256": "510b17341f5a37005ce3f1f475bb2198c15af6874aa39fc5cf2cd313dd2fcdc4",
+        "checkpoint_state_sha256": "a763b6deb1444ef38416544e6145da51ff01b310d4ff1e91516d9899ce477a4e",
+        "prediction_tokens": 1000000,
+        "target_plan_sha256": "23b00110ce29f527ef6905a7abe746bb62faf8398487bea5c7fd86d335100650",
+        "validation_manifest_sha256": "d93d1555f9808f7a6031fd4e6245fccecbe6e46d8e1307766a6f458502f9c4c5"
+      },
+      "status": "complete"
+    },
+    "w512muon_lr0.004_s101/parent": {
+      "artifacts": {
+        ".sweep-stage.json": {
+          "bytes": 8051,
+          "sha256": "48af07159eb266211091ad9662b5d461a7c417309be8d6be7b3c9735b04ea71f"
+        },
+        "canary.json": {
+          "bytes": 6685,
+          "sha256": "579cc6e52f295d5dfa3be716447d59982c859c871f914ad8bc8c7771b91ae5ec"
+        },
+        "checkpoint_storage_plan.json": {
+          "bytes": 2056,
+          "sha256": "e3a5a1d1921fb23fd4739026c3ce0172a1340a9d9669fe3457c0df5c7d8e1674"
+        },
+        "final/manifest.json": {
+          "bytes": 464,
+          "sha256": "9d9b5816066bec32e3158bb21cf7f44b539113c39f3ef113f769513f183af147"
+        },
+        "final/state.pt": {
+          "bytes": 1014797299,
+          "sha256": "5021e6d124f3a7d1b949dabaed01776eeba942caeb3d0d12063892adac02353c"
+        },
+        "metrics.jsonl": {
+          "bytes": 53389134,
+          "sha256": "f450700e06a5a70f358ab1217526a82a29f6c6ca9df7fccc9a3cd55e5648150f"
+        },
+        "milestone-000045003571/manifest.json": {
+          "bytes": 464,
+          "sha256": "be6c2d2f80b217a58d1129d79d36a8418ef1c41077dd9a2fb9272adb7e242692"
+        },
+        "milestone-000045003571/state.pt": {
+          "bytes": 1014797299,
+          "sha256": "45b68ed996d5623261ebfd48d8de1e9474c0fe3ba5450bc56a1bfdf1440e68fb"
+        },
+        "result.json": {
+          "bytes": 26810651,
+          "sha256": "8d52eefa4feb16523220ab1f9b8c83d9a4b4272031c494844fdb7b1916a726cd"
+        }
+      },
+      "billing": {
+        "ledger": "/workspace/tensor_train_ing/runs/muon_transfer/spend.json",
+        "run_id": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/parent",
+        "spent_usd": 0.1077448503025803
+      },
+      "result": {
+        "branch": {
+          "manifest_sha256": "be6c2d2f80b217a58d1129d79d36a8418ef1c41077dd9a2fb9272adb7e242692",
+          "path": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/parent/milestone-000045003571",
+          "state_sha256": "45b68ed996d5623261ebfd48d8de1e9474c0fe3ba5450bc56a1bfdf1440e68fb",
+          "tokens": 45006848
+        },
+        "checkpoint": {
+          "manifest_sha256": "9d9b5816066bec32e3158bb21cf7f44b539113c39f3ef113f769513f183af147",
+          "path": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w512muon_lr0.004_s101/w512muon_lr0.004_s101/parent/final",
+          "state_sha256": "5021e6d124f3a7d1b949dabaed01776eeba942caeb3d0d12063892adac02353c",
+          "tokens": 50003968
+        },
+        "throughput_canary": {
+          "completed_measured_steps": 60,
+          "controls": {
+            "measured_steps": 60,
+            "min_tokens_per_second": 2500.0,
+            "warmup_steps": 20
+          },
+          "kind": "throughput_canary",
+          "prediction_tokens": 491520,
+          "scope": "throughput gate only; passed does not imply full-run completion, future throughput or model quality",
+          "selected_steps": [
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13797859696205705,
+              "step": 21
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13787159603089094,
+              "step": 22
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.12474048300646245,
+              "step": 23
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1388878719881177,
+              "step": 24
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13983058801386505,
+              "step": 25
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13777250598650426,
+              "step": 26
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1415634820004925,
+              "step": 27
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1378718480700627,
+              "step": 28
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14034924400039017,
+              "step": 29
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13678630103822798,
+              "step": 30
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1392337359720841,
+              "step": 31
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13943678606301546,
+              "step": 32
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13860379089601338,
+              "step": 33
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13672590907663107,
+              "step": 34
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13860626297537237,
+              "step": 35
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13756399601697922,
+              "step": 36
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14104989799670875,
+              "step": 37
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13985314092133194,
+              "step": 38
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13785967708099633,
+              "step": 39
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13915069599170238,
+              "step": 40
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1406362960115075,
+              "step": 41
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14064831600990146,
+              "step": 42
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.12429985997732729,
+              "step": 43
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13786468701437116,
+              "step": 44
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13938324700575322,
+              "step": 45
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13924504595343024,
+              "step": 46
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13878942397423089,
+              "step": 47
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1400889919605106,
+              "step": 48
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13933130691293627,
+              "step": 49
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.559095450094901,
+              "step": 50
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14065036596730351,
+              "step": 51
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13850703102070838,
+              "step": 52
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1403735539643094,
+              "step": 53
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.140549345058389,
+              "step": 54
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14131532004103065,
+              "step": 55
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13870835292618722,
+              "step": 56
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13960487907752395,
+              "step": 57
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1253561869962141,
+              "step": 58
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14261894894298166,
+              "step": 59
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1388286640867591,
+              "step": 60
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14247239904943854,
+              "step": 61
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14003415196202695,
+              "step": 62
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1388436439447105,
+              "step": 63
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1377438879571855,
+              "step": 64
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13955682900268584,
+              "step": 65
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13709850306622684,
+              "step": 66
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1254270860226825,
+              "step": 67
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14243691693991423,
+              "step": 68
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1378525170730427,
+              "step": 69
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14159249397926033,
+              "step": 70
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1402582039590925,
+              "step": 71
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13826064101886004,
+              "step": 72
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14141970104537904,
+              "step": 73
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13948141993023455,
+              "step": 74
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14119470992591232,
+              "step": 75
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13877489499282092,
+              "step": 76
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.13995626207906753,
+              "step": 77
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.14001881307922304,
+              "step": 78
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1402279839385301,
+              "step": 79
+            },
+            {
+              "prediction_tokens": 8192,
+              "seconds": 0.1402141050202772,
+              "step": 80
+            }
+          ],
+          "status": "passed",
+          "timing_scope": "ratio of summed actual prediction targets to summed synchronized completed-update seconds; includes accumulation, forward/backward and optimizer; excludes checkpoint writes",
+          "tokens_per_second": 56299.20136388506,
+          "training_seconds": 8.730496847070754
+        }
+      },
+      "status": "complete"
+    }
+  },
+  "status": "complete",
+  "training_exposure_scope": "cooldown repeats the suffix from the 90% branch in addition to the full parent trajectory"
+}

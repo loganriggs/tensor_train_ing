@@ -167,14 +167,37 @@
       "elapsed_seconds": 71.91788369696587
     },
     "/workspace/tensor_train_ing/runs/muon_transfer/v1/w1024muon_lr0.004_s101/w1024muon_lr0.004_s101/parent": {
-      "status": "running",
+      "status": "complete",
       "rate_usd_per_hour": 0.4219,
-      "reserved_usd": 5.56908,
-      "spent_usd": 0.0,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.2210421075971899,
       "parent_checkpoint": null,
       "cost_margin_fraction": 0.1,
       "stage": "C",
-      "kind": "runtime"
+      "kind": "runtime",
+      "elapsed_seconds": 1886.1142150980886
+    },
+    "/workspace/tensor_train_ing/runs/muon_transfer/v1/w1024muon_lr0.004_s101/w1024muon_lr0.004_s101/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.023094028287694347,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w1024muon_lr0.004_s101/w1024muon_lr0.004_s101/parent/milestone-000045003571",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 197.0573639149079
+    },
+    "/workspace/tensor_train_ing/runs/muon_transfer/v1/w1024muon_lr0.004_s101/w1024muon_lr0.004_s101/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.0084925596545649,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/muon_transfer/v1/w1024muon_lr0.004_s101/w1024muon_lr0.004_s101/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 72.46554813091643
     }
   }
 }

@@ -693,3 +693,6 @@ budget from the measured Muon optima (drift width^−0.16) and the horizon rule.
 milestones, cooled branches ending exactly at each budget, evaluations, state pruning, idempotent re-runs. The fit uses each evaluation's
 `actual_prediction_tokens` (the parent's `rung_total_tokens` is the maximum). Queue (`runs/queue.txt`): after `muon_bigbatch` (~20:00), s38m + checks,
 s67m + checks, then chinchilla100m; s101m+ are added when the data lands.
+**Muon 1B, LR 3e-3 (15:34 Oct 19): 4.438** (2e-3: 4.448). So the 1B optimum is ≥3e-3, unbracketed above. Muon's optimal LR by width:
+512 ≈ 3.5e-3, 1024 ≈ 3.1e-3, 2048 ≥ 3e-3, essentially flat across a 4× width range: the spectral rule transfers the LR. **Muon vs the best AdamW at
+1B: −0.124** (4.438 vs 4.562). For the H100 config: start the Muon LR bracket at ~3e-3 (× the horizon factor), not lower.

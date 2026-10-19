@@ -607,7 +607,7 @@ safety margin (3× base costs 0.044 vs QK-clip's 0.40), 3.7× lower analysis dis
 
 **spectral_rms throughput fix (21:20):** a CPU profile put the overhead mostly in the forward/backward reparameterization (+16%), not the
 power iteration (2.7% of a step). `SpectralLinear.forward` now computes (γ/σ)·(W x) instead of materializing γW/σ each forward. Exact in FP64
-(test `test_spectral_linear_output_scaling_matches_effective_weight_exactly`). CPU proxy: 380 → 327 ms per fwd+bwd, overhead vs pre_rms ~21% → ~4%.
+(test `test_spectral_linear_output_scaling_matches_effective_weight_exactly`). CPU proxy: 380 → 327 ms per fwd+bwd, overhead vs pre_rms ~21% → ~4%. **Correction (07:50 Oct 19): on the GPU it was the other way round.** The seed-101 1B run with output scaling ran at 8.5k tok/s vs 9.3k for the same model before the change (−9%; no CPU contention). A bf16 fwd+bwd benchmark showed output scaling 13–16% slower at training micro-batches (8192 tokens ≫ d_in 2048) and 40% faster only at 512 tokens, the CPU proxy's regime. `forward` now picks the path by shape (tokens > d_in → scale the weight); both are exact and both are tested. The H100 micro-batches (≥8k tokens) take the weight path, i.e. the pre-change behaviour.
 The GPU effect is unmeasured: the 11% at 1B was measured before this change. Re-measure on the next GPU slot or the H100 day-1 canary.
 
 ## Width-exponent fit (`configs/exponent_fit` + earlier sweeps; width-scaled, 12 layers, 50M cooled tokens, seed 101; finished 03:53 Oct 19)

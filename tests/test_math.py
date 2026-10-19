@@ -588,7 +588,8 @@ def test_attn_row_power_one_bounds_coherent_contexts():
     assert out[(None, 256)] > out[(None, 16)] and out[(1.0, 256)] < out[(1.0, 16)]  # grows with n vs not
 
 
-def test_spectral_linear_output_scaling_matches_effective_weight_exactly():
+@pytest.mark.parametrize("shape", [(3, 5), (4, 10)])  # 15 tokens < d_in=24 -> output-scaling path; 40 > 24 -> weight path
+def test_spectral_linear_output_scaling_matches_effective_weight_exactly(shape):
     import torch
     import torch.nn.functional as F
     from tnlm.normalization import SpectralLinear
@@ -596,7 +597,7 @@ def test_spectral_linear_output_scaling_matches_effective_weight_exactly():
     lin = SpectralLinear(24, 16, bias=True).double()
     with torch.no_grad():
         lin.weight.normal_(); lin.bias.normal_(); lin.reset_gamma(); lin.gamma.mul_(1.7)
-    x = torch.randn(3, 5, 24, dtype=torch.float64, requires_grad=True)
+    x = torch.randn(*shape, 24, dtype=torch.float64, requires_grad=True)
     y = lin(x)
     ref = F.linear(x, lin.effective_weight(), lin.bias)
     torch.testing.assert_close(y, ref, rtol=1e-12, atol=1e-12)

@@ -318,9 +318,11 @@ class SpectralLinear(nn.Module):
         return (self.gamma * self.weight / self.sigma_used()).to(self.weight.dtype)
 
     def forward(self, x):
-        # (gamma / sigma) * (W x): identical to F.linear(x, effective_weight()) but scales the output by one scalar instead of
-        # materializing a new full-size weight (and backpropagating through it) every forward; ~14% faster fwd+bwd on a CPU proxy.
-        # effective_weight() remains the export / analysis view.
+        # (gamma / sigma) W x, applied to whichever is smaller (both exact; effective_weight() remains the export / analysis view):
+        # scaling the output touches tokens*d_out elements, scaling the weight d_in*d_out. Measured fwd+bwd on the GPU (bf16): at a
+        # training micro-batch (8192 tokens, 2048x6784) the weight path is 13% faster; at 512 tokens the output path is 40% faster.
+        if x.numel() // x.shape[-1] > self.weight.shape[1]:
+            return F.linear(x, self.effective_weight(), self.bias)
         y = F.linear(x, self.weight, None) * (self.gamma / self.sigma_used()).to(x.dtype)
         return y if self.bias is None else y + self.bias
 

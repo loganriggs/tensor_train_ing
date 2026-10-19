@@ -353,3 +353,13 @@ def test_scaling_grid_detects_reading_past_one_epoch(tmp_path):
                                                   "training_descriptor": {"configuration": {"data": {"manifest": str(manifest)}}}}))
         msg = g.read_past_one_epoch(d)
         assert (msg is None) if expect is None else (expect in msg), msg
+
+
+def test_check_data_epochs_flags_wrap(tmp_path):
+    m = tmp_path / "manifest.json"; m.write_text(json.dumps({"tokens": {"train": 1000}}))
+    for exp, seen in (("ok", 900), ("bad", 1890)):
+        d = tmp_path / "runs" / exp / "c" / "parent"; d.mkdir(parents=True)
+        (d / "result.json").write_text(json.dumps({"progress": {"input_tokens_seen": seen, "tokens": 500},
+                                                  "training_descriptor": {"configuration": {"data": {"manifest": str(m)}}}}))
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/check_data_epochs.py"), "--runs", str(tmp_path / "runs")], capture_output=True, text=True)
+    assert r.returncode == 1 and "WRAPPED bad" in r.stdout and "WRAPPED ok" not in r.stdout, r.stdout

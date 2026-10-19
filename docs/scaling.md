@@ -631,3 +631,15 @@ vs the best AdamW at this width **4.787** (LR 9e-4): **−0.14**. That beats Ada
 top LR, so the optimum is >4e-3. Stable (max |S1·S2| ≈ 0.2k; no stability flags). Verified like-for-like: same training/validation manifests,
 50.0M prediction tokens, cooled, 1M evaluation targets. Far larger than the literature's 1.1–1.4× expectation; one seed. Width 1024 runs
 pending (~06:15) for the transfer question.
+
+**Muon transfer complete (06:36):**
+
+| width | Muon 1e-3 | 2e-3 | 4e-3 | fitted optimum | best AdamW (width-scaled) | Muon − AdamW |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 512 | 4.803 | 4.675 | **4.645** | 3.5e-3 | 4.787 | **−0.14** |
+| 1024 | 4.653 | 4.529 | **4.514** | 3.1e-3 | 4.661 | **−0.15** |
+
+Muon's optimal LR drifts only as width^−0.16, vs AdamW's −0.39 under the ½ rule: the spectral rule nearly transfers the LR as the coordinate
+check predicted. The gain *grows* slightly with width. **The 300M Muon model (4.514) beats the 1B AdamW model (4.564).** Muon's optimizer
+step costs extra (Newton-Schulz on every hidden matrix); throughput is compared in the 1B follow-up. Follow-up (`configs/muon_followup`, ~14:15):
+the 512 optimum above 4e-3, seed 202, and 1B at 2e-3/3e-3. Chinchilla 100M now has a Muon arm (LR 2.4e-3).

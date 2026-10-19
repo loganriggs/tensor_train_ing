@@ -14,3 +14,14 @@
       seed: 101
       qk_clip_tau: 0.0
       qk_clip_every_steps: 0
+- name: muon_2b_s101
+  overrides:
+    model:
+      normalization: pre_rms
+      width_scaling_base: null
+    train:
+      optimizer: muon
+      muon_adjust_lr: spectral_unclamped
+      lr: 0.0024
+      aux_adamw_lr: 0.00045
+      seed: 101

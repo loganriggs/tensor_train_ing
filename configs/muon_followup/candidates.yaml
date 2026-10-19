@@ -1,0 +1,40 @@
+- name: w512muon_lr0.008_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.008
+      seed: 101
+- name: w512muon_lr0.004_s202
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+    train:
+      lr: 0.004
+      seed: 202
+- name: w2048muon_lr0.002_s101
+  overrides:
+    model:
+      d_model: 2048
+      heads: 32
+      d_mlp: 6784
+      activation_checkpointing: true
+    train:
+      lr: 0.002
+      seed: 101
+- name: w2048muon_lr0.003_s101
+  overrides:
+    model:
+      d_model: 2048
+      heads: 32
+      d_mlp: 6784
+      activation_checkpointing: true
+    train:
+      lr: 0.003
+      seed: 101

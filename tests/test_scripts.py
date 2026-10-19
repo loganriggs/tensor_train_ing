@@ -363,3 +363,12 @@ def test_check_data_epochs_flags_wrap(tmp_path):
                                                   "training_descriptor": {"configuration": {"data": {"manifest": str(m)}}}}))
     r = subprocess.run([sys.executable, str(ROOT / "scripts/check_data_epochs.py"), "--runs", str(tmp_path / "runs")], capture_output=True, text=True)
     assert r.returncode == 1 and "WRAPPED bad" in r.stdout and "WRAPPED ok" not in r.stdout, r.stdout
+
+
+def test_contamination_ngram_hashes_match_shared_windows():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import numpy as np
+    import check_contamination as cc
+    a = np.arange(40, dtype=np.int32); b = np.r_[np.full(5, 7), a[10:30], np.full(5, 9)].astype(np.int32)
+    ha, hb = cc.ngram_hashes(a), cc.ngram_hashes(b)
+    assert len(ha) == 40 - 12 and np.isin(hb, ha).sum() == 20 - 12  # exactly the windows inside the shared 20-token span

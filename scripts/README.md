@@ -21,6 +21,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 4b | `norm_cost_table.py LABEL=analysis.json ...` | Analysis-cost table per normalization package (5 metrics) |
 | 4c | `find_orphan_states.py [--keep ...]` | List checkpoints whose run already has an evaluation (deletion candidates; deletes nothing) |
 | 4c | `check_data_epochs.py` | Flag stages that read past one epoch of their training split (silent wrap); input/trained ratio per experiment. Run each code-health review |
+| 4c | `check_contamination.py --train DIR` | 13-gram overlap of validation docs with a training-split sample (near-duplicate leakage the exact-match exclusion misses) |
 | 4d | `fit_lr_optimum.py [--pattern ...]` | Per-group LR optimum (quadratic in log LR) and power law of the optimum across groups |
 | 4d | `throughput.py RUN_DIR [...]` | Steady-state tokens/s per run (second half of metrics.jsonl); catches throughput regressions |
 | 4e | `scaling_grid.py SIZE [--lr-mult M] [--tpp 5,10,20,40] [--plan]` | Scaling-law grid: one constant-LR parent per size, cooled branch + evaluation per token budget; resumable, prunes states |

@@ -24,9 +24,12 @@ is discarded, and already-pruned raw shards must be downloaded again to retry.
 and free disk. Its explicit `--prune-raw-root` option deletes only declared raw
 parquet files inside a dedicated disposable directory, after each shard has been completely read, its post-scan checksum has passed,
 and its parquet reader has closed. Existing raw files outside that directory remain untouched. The
-source specification is frozen beside the report. A 22-billion-byte free-space
-floor leaves a buffer over the requested 20 GB GPU-checkpoint headroom; this is a
+source specification is frozen beside the report. The launcher pauses its entire worker process group below 35 GiB free and
+resumes at 40 GiB, preserving progress and leaving margin over the requested
+25 GB GPU-checkpoint reserve. Pauses and their durations are recorded. This is a
 sampled guard, not a filesystem quota or reservation against concurrent writers.
+The already-running frozen snapshot uses an external supervised guard with the
+same thresholds; the snapshot itself remains unchanged.
 
 The release pipeline uses a frozen code snapshot and supervisor. Preparation
 success alone is not acceptance: `scripts/audit_scaling_data.py` independently
@@ -37,8 +40,12 @@ construction and near-end checkpoint replay. Logs and detailed measurements live
 under `runs/codex_data_13b/`; final release evidence is copied into this directory
 when the audit finishes.
 
-Validation of the implementation: 1,148 fast CPU tests passed, including
+Validation of the implementation: 1,153 fast CPU tests passed, including
 serial/parallel byte identity and legacy sampler behavior. Additional focused
 checks exercise disk reclamation, fixed-validation exclusions, explicit raw-file
 pruning, audit failures, and a real two-worker preparation. No GPU is used by this
 pipeline.
+
+The pause policy also has an actual CPU process-group test: parent and child
+progress stop under SIGSTOP and continue under SIGCONT without resetting. Eleven
+focused launcher tests passed after the disk-policy update.

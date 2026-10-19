@@ -1,0 +1,47 @@
+# First compute-optimal-horizon runs: 12x512 (~100M) for ~2B tokens (Chinchilla ~20 tokens/param) on the 3B held-out set; validation on the
+# same 1476-doc confirmation split as every screen. Do today's 50M-300M conclusions (incl. spectral_rms vs pre_rms) hold at this horizon?
+# LRs from the horizon rule LR_opt(D) ~= LR_opt(50M)*(D/50M)^-0.10: pre_rms ~4.7e-4, spectral_rms 7.8e-4*0.69 ~= 5.4e-4.
+project:
+  total_budget_usd: 1000
+  reserve_usd: 150
+  dry_run: false
+  spend_ledger: /workspace/tensor_train_ing/runs/chinchilla100m/spend.json
+  stage: C
+  gpu_hourly_rate_usd: 0.4219
+  milestone_tokens: []
+  keep_recovery_checkpoints: 0
+  save_initial_checkpoint: false
+model:
+  layers: 12
+  d_model: 512
+  heads: 8
+  d_key: 64
+  d_value: 64
+  d_mlp: 1664
+  padded_vocab: 50304
+  mlp: bilinear
+  attention: signed_product
+  normalization: pre_rms
+  final_normalization: rms
+  loss_chunk_tokens: 4096
+  width_scaling_base: 512
+data:
+  manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
+  context: 512
+  micro_batch_size: 16
+evaluation:
+  validation_manifest: /workspace/tensor_train_ing/data/fineweb_confirmation_320m/manifest.json
+  seed: 0
+train:
+  deterministic: false
+  optimizer: adamw
+  lr: 0.00045
+  global_prediction_tokens_per_update: 8192
+  rung_total_tokens: 2000000000
+  schedule: constant_with_separate_cooldown
+  cooldown_fraction: 0.1
+  compile: true
+  seed: 101
+  stability_every_steps: 500
+  qk_clip_tau: 100.0
+  qk_clip_every_steps: 50

@@ -105,3 +105,8 @@ seed and LR that diverged before (w2048, seed 202, LR 1.35e-3); (5) analysis cos
 1.4B (24×2048), 28B tokens (~106k updates at 262k tokens/update), LR 7e-4 at width 512 (horizon rule × measured batch multiplier),
 sparse milestones. Day 1 fills in the GPU rate and the 28B-token manifests. **Day-1 LR bracket:** {5e-4, 7e-4, 1e-3} for ~1B tokens each on the
 chosen variant, keep the best, then launch the full run. A vs B is the user's call (see docs/scaling.md, "spectral_rms at 1B").
+
+### User preference (03:10 Oct 19)
+Leaning to **variant B (`spectral_rms`)**, conditional on the second-seed 1B result (~09:45). Also queued: the first Chinchilla-horizon runs, 100M ×
+2B tokens, `pre_rms` and `spectral_rms` (`configs/chinchilla100m`, ~17 h, starting ~09:45). They check whether the 50–300M-token conclusions
+hold at a compute-optimal horizon.

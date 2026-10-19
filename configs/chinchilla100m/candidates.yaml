@@ -1,0 +1,16 @@
+- name: pre_rms_2b_s101
+  overrides:
+    model:
+      normalization: pre_rms
+    train:
+      lr: 0.00047
+      seed: 101
+- name: spectral_rms_2b_s101
+  overrides:
+    model:
+      normalization: spectral_rms
+    train:
+      lr: 0.00054
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0

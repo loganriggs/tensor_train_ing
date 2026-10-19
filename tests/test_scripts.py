@@ -236,3 +236,14 @@ def test_throughput_last_n_rows(tmp_path):
     out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), str(tmp_path), "--last", "3"],
                          capture_output=True, text=True, check=True).stdout
     assert "500 tok/s" in out
+
+
+def test_find_runs_throughput_column(tmp_path):
+    cand = tmp_path / "e1" / "v1" / "a" / "a"
+    (cand / "evaluation").mkdir(parents=True); (cand / "parent").mkdir()
+    (cand / "evaluation" / "evaluation.json").write_text(json.dumps({"ce": 4.0, "training_descriptor": {"width": 512}}))
+    rows = [{"tokens": 2000 * k, "run_elapsed_seconds": k} for k in range(6)]
+    (cand / "parent" / "metrics.jsonl").write_text("\n".join(map(json.dumps, rows)))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/find_runs.py"), "width=512", "--runs", str(tmp_path), "--throughput"],
+                         capture_output=True, text=True, check=True).stdout
+    assert "2000 tok/s" in out

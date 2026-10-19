@@ -668,3 +668,9 @@ small batch: this GPU does one optimizer update per 8,192 tokens, and Muon's New
 step 12.3 ms, so **62% per-matrix overhead at 8,192 tokens/update but ~1.9% at the H100's 262,144**. Muon's −0.14 equal-token advantage
 therefore costs about 2% throughput at H100 scale. At this GPU's batch, an equal-*compute* comparison would give AdamW ~1.38× tokens, so Muon's
 edge here is smaller than −0.14. Still untested: Muon at 262k tokens/update (critical batch was measured for AdamW only).
+
+**Muon at 1B (12×2048, seed 101, 50M cooled tokens; 13:24 Oct 19): LR 2e-3 → 4.448 vs the best AdamW 1B run 4.562 (pre_rms + QK-clip,
+4.5e-4): −0.114** (`scripts/find_runs.py width=2048 depth=12 seed=101 …`; every AdamW 1B run at this seed was 4.562–4.577). Stable. End of run
+(`stability_trace.py`, columns S1S2max / mlpkurt): S1·S2 max 270 vs ~1.7–2.0k for AdamW, MLP-product excess kurtosis 1.6k vs ~450–620. So the
+Muon gain holds at 4× the 512 width: −0.14 at 512, −0.15 at 1024, −0.11 at 2048. It's an equal-token comparison; equal compute at the H100 batch
+differs by ~2% (see throughput above). LR 3e-3 at 1B lands ~15:10.

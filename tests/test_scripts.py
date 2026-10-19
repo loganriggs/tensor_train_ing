@@ -282,3 +282,32 @@ def test_scaling_grid_end_to_end_cpu(tmp_path):
     assert not list(out.rglob("state.pt")), "model states must be pruned"
     r2 = subprocess.run(args, capture_output=True, text=True, cwd=ROOT)
     assert r2.returncode == 0 and "STAGE_START" not in r2.stdout, r2.stdout
+
+
+@pytest.mark.slow
+def test_scaling_grid_continues_a_time_capped_parent(tmp_path):
+    """A runtime cap leaves a short parent final/; the driver must continue it (parent_c<k>) instead of branching from it."""
+    import yaml
+    pilot = ROOT / "data/fineweb_pilot_5m/manifest.json"
+    if not pilot.exists():
+        pytest.skip("pilot data not prepared")
+    base = yaml.safe_load(open(ROOT / "configs/scaling_grid/base.yaml"))
+    base["data"].update(context=32, micro_batch_size=4)
+    base["evaluation"]["validation_manifest"] = str(pilot)
+    base["project"].update(checkpoint_every_seconds=1)
+    base["train"].update(compile=False, bf16_compute=False, global_prediction_tokens_per_update=256, stability_every_steps=0,
+                         qk_clip_every_steps=5)
+    grid = tmp_path / "grid"; grid.mkdir()
+    (grid / "base.yaml").write_text(yaml.safe_dump(base))
+    (grid / "sizes.yaml").write_text(yaml.safe_dump({"tiny": {"model": {"d_model": 16, "heads": 1, "d_mlp": 32, "layers": 1},
+                                                              "lr": 0.003, "data_manifest": str(pilot)}}))
+    common = [sys.executable, str(ROOT / "scripts/scaling_grid.py"), "tiny", "--tpp", "0.02", "--device", "cpu",
+              "--grid-dir", str(grid), "--runs-dir", str(tmp_path / "runs")]
+    r = subprocess.run(common + ["--max-seconds", "4"], capture_output=True, text=True, cwd=ROOT)
+    out = tmp_path / "runs/scaling_grid/tiny"
+    assert list(out.glob("parent_c*")), r.stdout + r.stderr  # the cap forced at least one continuation
+    if r.returncode:  # cooldown/eval may also hit the tiny cap; finish with a normal cap
+        r = subprocess.run(common + ["--max-seconds", "600"], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0 and "GRID_DONE tiny" in r.stdout, r.stdout + r.stderr
+    ev = json.load(open(next(out.glob("*/evaluation/evaluation.json"))))
+    assert ev["training_descriptor"]["actual_prediction_tokens"] == ev["training_descriptor"]["rung_total_tokens"]

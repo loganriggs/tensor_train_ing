@@ -71,6 +71,44 @@ def plan_line(b: dict) -> str:
             + f"  parent {branch_max / 1e9:.2f}B  train tokens {tokens / 1e9:.2f}B  ~{hours:.1f} GPU-h  data>= {b['budgets'][-1] / 1e9:.2f}B")
 
 
+def result_tokens(run_dir: Path):
+    """Tokens reached by a finished stage (result.json progress), or None."""
+    try:
+        return int(json.load(open(run_dir / "result.json"))["progress"]["tokens"])
+    except (OSError, KeyError, ValueError):
+        return None
+
+
+def parent_dirs(out: Path) -> list[Path]:
+    """parent/ plus continuation dirs parent_c1, parent_c2, ... (resume always writes a NEW run dir)."""
+    conts = sorted(out.glob("parent_c*"), key=lambda p: int(p.name.split("_c")[1]))
+    return ([out / "parent"] if (out / "parent").exists() else []) + conts
+
+
+def furthest_checkpoint(out: Path, batch: int):
+    """(reached, (tokens, checkpoint)): tokens reached by any finished parent stage (a pruned final/ still counts, via result.json), and the
+    furthest checkpoint that can actually be resumed (a final/ or recovery-<steps> whose state.pt still exists; (0, None) if none)."""
+    reached, resumable = 0, (0, None)
+    for d in parent_dirs(out):
+        t = result_tokens(d)
+        if t is not None:
+            reached = max(reached, t)
+            if (d / "final" / "state.pt").exists() and t > resumable[0]:
+                resumable = (t, d / "final")
+        for rec in d.glob("recovery-*"):
+            t = int(rec.name.split("-")[1]) * batch
+            if (rec / "state.pt").exists() and t > resumable[0]:
+                resumable = (t, rec)
+    return max(reached, resumable[0]), resumable
+
+
+def find_milestone(out: Path, threshold: int):
+    for d in parent_dirs(out):
+        if (d / f"milestone-{threshold:012d}").exists():
+            return d / f"milestone-{threshold:012d}"
+    return None
+
+
 def sh(args: list[str], log: Path) -> int:
     with open(log, "a") as f:
         return subprocess.run(args, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT).returncode
@@ -89,15 +127,25 @@ def run(b: dict, device: str, max_seconds: float) -> int:
         raise SystemExit(f"{cfg_path} exists with a different configuration; refusing to mix (move it aside to restart)")
     cfg_path.write_text(yaml.safe_dump(b["cfg"], sort_keys=False))
     cli = [sys.executable, "-m", "tnlm.cli"]
-    parent = out / "parent"
     last = b["branch"][b["budgets"][-1]]
-    if not (parent / "final").exists():
-        print(f"STAGE_START {b['tag']}/parent", flush=True)
-        rc = sh(cli + ["train", "--config", str(cfg_path), "--run-dir", str(parent), "--max-steps", str(last // batch),
-                       "--max-seconds", str(max_seconds), "--device", device], out / "parent.log")
-        if rc:
-            print(f"STAGE_FAILED {b['tag']}/parent rc={rc}", flush=True)
-            return rc
+    # Parent: train to the largest budget's branch point. A runtime cap or crash leaves a shorter final/ or a recovery state; continue from the
+    # furthest one into parent_c<k> (milestones are found in whichever parent dir saved them). Stops if an attempt makes no progress.
+    reached, (start, ckpt) = furthest_checkpoint(out, batch)
+    while reached < last:
+        if ckpt is None:
+            if (out / "parent").exists():
+                (out / "parent").rename(out / f"parent_failed{len(list(out.glob('parent_failed*')))}")
+            run_dir, extra, start = out / "parent", [], 0
+        else:
+            run_dir, extra = out / f"parent_c{len(list(out.glob('parent_c*'))) + 1}", ["--resume", str(ckpt)]
+        print(f"STAGE_START {b['tag']}/{run_dir.name} from {start} tokens", flush=True)
+        rc = sh(cli + ["train", "--config", str(cfg_path), "--run-dir", str(run_dir), "--max-steps", str((last - start) // batch),
+                       "--max-seconds", str(max_seconds), "--device", device] + extra, out / "parent.log")
+        before = reached
+        reached, (start, ckpt) = furthest_checkpoint(out, batch)
+        if reached <= before:
+            print(f"STAGE_FAILED {b['tag']}/{run_dir.name} rc={rc} (no progress past {before} tokens)", flush=True)
+            return rc or 1
     for d in b["budgets"]:
         name = f"{b['tag']}_tpp{round(b['tpps'][d], 3):g}"  # D is rounded to the batch, so 4.99997 -> tpp5
         cand = out / name
@@ -105,18 +153,18 @@ def run(b: dict, device: str, max_seconds: float) -> int:
         if ev.exists():
             continue
         steps = (d - b["branch"][d] + batch - 1) // batch
-        milestone = parent / f"milestone-{9 * d // 10:012d}"
-        resume = milestone if milestone.exists() else parent / "final"  # the largest budget's branch point is the parent's endpoint
+        milestone = find_milestone(out, 9 * d // 10)
+        resume = milestone if milestone is not None else furthest_checkpoint(out, batch)[1][1]  # largest budget: the parent's endpoint
         cand.mkdir(exist_ok=True)
         if not (cand / "cooldown" / "final").exists():
             print(f"STAGE_START {name}/cooldown D={d}", flush=True)
             rc = sh(cli + ["cooldown", "--config", str(cfg_path), "--resume", str(resume), "--cooldown-steps", str(steps),
                            "--cooldown-end-tokens", str(d), "--run-dir", str(cand / "cooldown"), "--max-steps", str(steps),
                            "--max-seconds", str(max_seconds), "--device", device], cand / "cooldown.log")
-            if rc:
-                print(f"STAGE_FAILED {name}/cooldown rc={rc}", flush=True)
-                return rc
-        if milestone.exists():
+            if rc or result_tokens(cand / "cooldown") != d:
+                print(f"STAGE_FAILED {name}/cooldown rc={rc} tokens={result_tokens(cand / 'cooldown')} expected={d}", flush=True)
+                return rc or 1
+        if milestone is not None:
             drop_state(milestone)
         print(f"STAGE_START {name}/evaluation", flush=True)
         rc = sh(cli + ["evaluate", "--config", str(cfg_path), "--checkpoint", str(cand / "cooldown" / "final"), "--out", str(cand / "evaluation"),
@@ -126,9 +174,10 @@ def run(b: dict, device: str, max_seconds: float) -> int:
             return rc
         drop_state(cand / "cooldown")
         print(f"RUN_END {name} D={d} tpp={b['tpps'][d]:.2f} ce={json.load(open(ev))['ce']:.4f}", flush=True)
-    drop_state(parent)
-    for rec in parent.glob("recovery-*"):
-        shutil.rmtree(rec, ignore_errors=True)
+    for d in parent_dirs(out):
+        drop_state(d)
+        for rec in d.glob("recovery-*"):
+            shutil.rmtree(rec, ignore_errors=True)
     print(f"GRID_DONE {b['tag']}", flush=True)
     return 0
 

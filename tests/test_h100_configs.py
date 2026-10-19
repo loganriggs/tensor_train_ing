@@ -18,7 +18,11 @@ def test_h100_config_invariants(path):
         assert c.train.qk_clip_tau == 0.0  # QK-clip rejects spectral models at trainer start
     else:
         assert c.train.qk_clip_tau > 0 and c.train.qk_clip_every_steps > 0
-    assert c.model.width_scaling_base == 512 and c.train.global_prediction_tokens_per_update >= 131072
+    if c.train.optimizer == "muon":  # make_optimizer rejects Muon + width_scaling_base; Muon's spectral rule does the shape scaling
+        assert c.model.width_scaling_base is None and c.train.muon_adjust_lr == "spectral_unclamped"
+    else:
+        assert c.train.optimizer == "adamw" and c.model.width_scaling_base == 512
+    assert c.train.global_prediction_tokens_per_update >= 131072
     assert isinstance(c.train.rung_total_tokens, int) and c.train.rung_total_tokens > 1e10
     kept = sum(1 for _ in pending_milestone_tokens(c, start_tokens=0, token_limit=c.train.rung_total_tokens))
     assert kept <= 12, "sparse milestones required (the default keeps a full state every 100M tokens)"

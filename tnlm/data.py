@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import zlib
 import importlib.metadata
 import json
 import math
@@ -247,11 +248,12 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
     scan_records = unique_documents = 0
     ledger_path = out / '.seen.sqlite'
     ledger = sqlite3.connect(ledger_path)
+    ledger.execute('PRAGMA auto_vacuum=INCREMENTAL')
     ledger.execute('PRAGMA cache_size=-32768')
     ledger.execute('PRAGMA temp_store=FILE')
     ledger.execute('CREATE TABLE seen (id TEXT PRIMARY KEY, content_hash TEXT NOT NULL)')
-    ledger.execute('CREATE TABLE candidates (id TEXT PRIMARY KEY, text TEXT NOT NULL, source_offset TEXT NOT NULL, content_hash TEXT NOT NULL, rank TEXT NOT NULL)')
-    ledger.execute('CREATE INDEX candidate_rank ON candidates(rank DESC, id ASC)')
+    ledger.execute('CREATE TABLE candidates (id TEXT PRIMARY KEY, text BLOB NOT NULL, source_offset TEXT NOT NULL, content_hash TEXT NOT NULL, rank TEXT NOT NULL)')
+    ledger.execute('CREATE INDEX candidate_rank ON candidates(rank ASC, id ASC)')
     streams = {}
     tokenized = None
     total = document_count = 0
@@ -297,15 +299,20 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
                 else:
                     selected_count += 1
                 ledger.execute('INSERT INTO candidates VALUES (?, ?, ?, ?, ?)',
-                               (doc_id, text, json.dumps(source_offset), content_hash, rank))
+                               (doc_id, zlib.compress(text.encode('utf-8'), level=1), json.dumps(source_offset), content_hash, rank))
                 if selected_count == max_documents:
                     worst_rank = ledger.execute('SELECT rank FROM candidates ORDER BY rank DESC, id ASC LIMIT 1').fetchone()[0]
         ledger.commit()
         if source_jsonl is not None and _sha(source_jsonl) != source['sha256']:
             raise ValueError('local source changed during preparation')
         streams = {split: (out / f'{split}.tokens.bin').open('wb') for split in fractions}
-        from .data_preparation import ordered_tokenization
-        rows = ledger.execute('SELECT id, text, source_offset, content_hash, rank FROM candidates ORDER BY rank ASC, id ASC')
+        from .data_preparation import ordered_tokenization, consume_candidates, reclaim_candidate_pages
+        # Duplicate conflicts are checked over the full source before this point.
+        # Reclaim their ledger and progressively release selected source payloads
+        # so large preparations do not retain all text beside the final tokens.
+        ledger.execute('DROP TABLE seen')
+        reclaim_candidate_pages(ledger)
+        rows = consume_candidates(ledger, batch_bytes=tokenization_batch_bytes)
         tokenized = ordered_tokenization(rows, tokenizer=tokenizer, workers=workers,
                                          batch_bytes=tokenization_batch_bytes)
         with (out / 'documents.jsonl').open('w') as metadata:

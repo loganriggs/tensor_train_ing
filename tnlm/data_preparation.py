@@ -5,6 +5,7 @@ import hashlib
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
+import zlib
 
 import numpy as np
 
@@ -80,3 +81,47 @@ def ordered_tokenization(rows, *, tokenizer, workers, batch_bytes):
         for future in pending:
             future.cancel()
         pool.shutdown(wait=True, cancel_futures=True)
+
+
+def reclaim_candidate_pages(ledger):
+    """Return disposable ledger free pages to the filesystem without a full copy."""
+    ledger.commit()
+    # Drain the PRAGMA cursor: incremental_vacuum may expose one result per page.
+    ledger.execute('PRAGMA incremental_vacuum').fetchall()
+
+
+def consume_candidates(ledger, *, batch_bytes, reclaim_bytes=32 * 1024 * 1024):
+    """Consume compressed ranked rows, reclaiming storage as tokens are emitted.
+
+    Input batches hold at most 128 compressed documents and the byte budget,
+    except for an indivisible oversized document. Text is decompressed lazily.
+    No SELECT remains active during DELETE/commit/vacuum. Deleting a queued row
+    is safe because preparation is atomic and has no partial-resume contract.
+    """
+    released = 0
+    while True:
+        columns = 'SELECT id, text, source_offset, content_hash, rank FROM candidates'
+        # Consumed rows are deleted, so the index front is the next batch.
+        # Avoid a disjunctive keyset predicate that can rescan a large index.
+        cursor = ledger.execute(columns + ' ORDER BY rank ASC, id ASC LIMIT 128')
+        rows, size = [], 0
+        try:
+            for row in cursor:
+                if rows and size + len(row[1]) > batch_bytes:
+                    break
+                rows.append(row)
+                size += len(row[1])
+                if size >= batch_bytes:
+                    break
+        finally:
+            cursor.close()
+        if not rows:
+            reclaim_candidate_pages(ledger)
+            return
+        ledger.executemany('DELETE FROM candidates WHERE id=?', ((row[0],) for row in rows))
+        released += size
+        if released >= reclaim_bytes:
+            reclaim_candidate_pages(ledger)
+            released = 0
+        for doc_id, compressed, offset, content_hash, rank in rows:
+            yield doc_id, zlib.decompress(compressed).decode('utf-8'), offset, content_hash, rank

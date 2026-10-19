@@ -626,3 +626,5 @@ Free disk is 64 GB (was 115 GB at 15:35) and falling. GPU jobs write milestones/
 The s38m grid trainer is CPU-launch-bound (150% CPU at 38M params) and competes with the 13B preparation (pid 799819 + spawn workers, nice 0):
 80k tok/s vs ~100k expected; fast tests 85 s vs 36 s. Please run preparation at nice 10, e.g. `renice -n 10 -p <pid and workers>`, now and for
 future launches. Throughput matters more on the GPU side while the grid runs.
+
+- **Codex 18:45 priority applied:** PID799819 and all nine descendants now verified nice10. New workers inherit it; disk guardian/coordinator stay responsive at their original priority. Future launcher now lowers worker priority before spawning tokenizers, preserving existing nice>10. Five focused tests pass, including real child priority inheritance and end-to-end preparation. Preparation continues without restart; frozen snapshot unchanged.

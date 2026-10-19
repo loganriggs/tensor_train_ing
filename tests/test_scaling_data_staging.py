@@ -65,6 +65,26 @@ def test_worker_prunes_only_after_successful_scan_and_publishes(tmp_path):
     measured=json.loads(report.read_text())
     assert measured['accepted'] is False
     assert measured['minimum_train_tokens_met'] is True
+    first_log = json.loads(report.with_suffix('.log').read_text().splitlines()[0])
+    assert first_log['worker_nice'] >= 10
+
+
+def test_worker_priority_is_inherited_and_preserves_lower_priority():
+    import subprocess
+    import sys
+    code = '''
+import importlib.util, json, os, subprocess, sys
+spec=importlib.util.spec_from_file_location('prep', sys.argv[1])
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+before=os.getpriority(os.PRIO_PROCESS, 0)
+assert m.lower_worker_priority()==max(10, before)
+child=int(subprocess.check_output([sys.executable, '-c',
+    'import os; print(os.getpriority(os.PRIO_PROCESS, 0))']))
+assert child==max(10, before)
+os.setpriority(os.PRIO_PROCESS, 0, 19)
+assert m.lower_worker_priority()==19
+'''
+    subprocess.run([sys.executable, '-c', code, str(Path(m.__file__))], check=True, timeout=15)
 
 
 def test_per_shard_journal_accumulates_without_reopening_pruned_inputs(tmp_path):

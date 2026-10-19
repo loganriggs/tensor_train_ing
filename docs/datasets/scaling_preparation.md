@@ -31,6 +31,11 @@ sampled guard, not a filesystem quota or reservation against concurrent writers.
 The already-running frozen snapshot uses an external supervised guard with the
 same thresholds; the snapshot itself remains unchanged.
 
+Future launches set the preparation worker to nice 10 before it spawns tokenizers
+(and preserve an already lower priority). The disk-monitoring coordinator keeps
+its original priority. The current frozen run and its existing children were
+reniced to 10 in place at the 18:45 request; its snapshot was not modified.
+
 The release pipeline uses a frozen code snapshot and supervisor. Preparation
 success alone is not acceptance: `scripts/audit_scaling_data.py` independently
 checks every artifact hash, int32 payload sizes, metadata ranges, minimum train

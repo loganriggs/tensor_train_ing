@@ -20,6 +20,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
+def lower_worker_priority():
+    """Yield CPU to training; descendants inherit this without a spawn race."""
+    current = os.getpriority(os.PRIO_PROCESS, 0)
+    os.setpriority(os.PRIO_PROCESS, 0, max(10, current))
+    return os.getpriority(os.PRIO_PROCESS, 0)
+
+
 def sha(path):
     h = hashlib.sha256()
     with Path(path).open('rb') as stream:
@@ -161,6 +168,7 @@ def main(argv=None):
     source_bytes = args.source.read_bytes()
     source = json.loads(source_bytes)
     if args.worker:
+        print(json.dumps({'worker_nice': lower_worker_priority()}), flush=True)
         worker(args, source)
         return 0
     if args.out.exists() or args.report.exists():

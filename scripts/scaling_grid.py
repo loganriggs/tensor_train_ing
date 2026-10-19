@@ -29,15 +29,11 @@ TOK_S = {256: 100e3, 384: 85e3, 512: 66e3, 768: 45e3, 1024: 32e3, 1536: 17e3}  #
 
 
 def param_counts(model: dict) -> tuple[int, int]:
-    import torch
+    """(total, non-embedding) parameters of a model section; delegates to tnlm.shapes.count_params (the repo's single counter)."""
     from tnlm.config import ModelConfig
-    from tnlm.model import TensorLM
-    keys = {k: v for k, v in model.items() if k in ModelConfig.__dataclass_fields__}
-    with torch.device("meta"):
-        m = TensorLM(ModelConfig(**keys))
-    total = sum(p.numel() for p in m.parameters())
-    emb = m.embed.weight.numel() + (0 if m.unembed.weight is m.embed.weight else m.unembed.weight.numel())
-    return total, total - emb
+    from tnlm.shapes import count_params
+    c = count_params(ModelConfig(**{k: v for k, v in model.items() if k in ModelConfig.__dataclass_fields__}))
+    return c["total"], c["non_embedding"]
 
 
 def build(size: str, lr_mult: float, tpps: list[float], grid: Path = GRID, runs: Path = ROOT / "runs") -> dict:

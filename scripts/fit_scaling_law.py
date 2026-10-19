@@ -22,17 +22,18 @@ import torch
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def collect(runs: Path, params: str = "total") -> list[tuple[float, float, float, str]]:
-    from scaling_grid import param_counts
+    from tnlm.config import ModelConfig
+    from tnlm.shapes import count_params
     pts = []
     for size_dir in sorted((runs / "scaling_grid").glob("*")):
         if "_lrx" in size_dir.name or not (size_dir / "config.yaml").exists():
             continue
-        total, nonemb = param_counts(yaml.safe_load(open(size_dir / "config.yaml"))["model"])
-        n = total if params == "total" else nonemb
+        model = yaml.safe_load(open(size_dir / "config.yaml"))["model"]
+        c = count_params(ModelConfig(**{k: v for k, v in model.items() if k in ModelConfig.__dataclass_fields__}))
+        n = c["total"] if params == "total" else c["non_embedding"]
         for ev in sorted(size_dir.glob("*/evaluation/evaluation.json")):
             d = json.load(open(ev))
             pts.append((float(n), float(d["training_descriptor"]["actual_prediction_tokens"]), float(d["ce"]), ev.parent.parent.name))

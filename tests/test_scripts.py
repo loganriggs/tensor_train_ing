@@ -162,3 +162,19 @@ def test_find_orphan_states_lists_only_evaluated_old_states(tmp_path):
     found = list(fos.orphans(runs, 30))
     assert found == [done / "state.pt"]
     assert list(fos.orphans(runs, 30, keep=["exp/a"])) == []
+
+
+def test_fit_lr_optimum_recovers_planted_power_law(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import math
+    import fit_lr_optimum as flo
+    runs = tmp_path / "runs"
+    for w in (512, 1024, 2048):
+        opt = 1e-3 * (w / 512) ** -0.5
+        for lr in (2.5e-4, 5e-4, 1e-3, 2e-3):
+            d = runs / "exp/v1" / f"w{w}ws_lr{lr:g}_s101" / f"w{w}ws_lr{lr:g}_s101" / "evaluation"
+            d.mkdir(parents=True)
+            (d / "evaluation.json").write_text(json.dumps({"ce": 4.0 + 0.1 * (math.log(lr) - math.log(opt)) ** 2}))
+    res = flo.fit(flo.collect(runs, r"w(?P<group>\d+)ws_lr(?P<lr>[0-9.e-]+)_s101"))
+    for w in (512, 1024, 2048):
+        assert abs(res[w]["opt"] / (1e-3 * (w / 512) ** -0.5) - 1) < 1e-6 and res[w]["interior"]

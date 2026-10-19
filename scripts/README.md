@@ -7,6 +7,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 1 | `check_experiment_configs.py EXP [--keep-count K]` | Preflight: screening retention, duplicate names, peak disk vs free |
 | 2 | `run_queue.sh WAIT_PID EXP[:MIN_TOK_S[:MAX_S]] ... \| path.sh` | Run experiments back to back after an optional running job; stops at the first failure |
 | 2 | `run_queue_file.sh WAIT_PID QUEUE_FILE` | Same, but entries live in a file re-read before each one (reorder a running queue by editing `runs/queue.txt`) |
+| 2 | `codex_msg.sh "text"` | Message Codex in tmux and verify it was submitted (retries Enter; warns if it stays in the input box) |
 | | `run_candidates_v2.sh EXP MIN_TOK_S "KEEP" [MAX_S] [DEVICE]` | One sweep, one candidate at a time, in bounded disk (called by `run_queue.sh`) |
 | 1b | `norm_canary.py OUT [--norms ...] [--layers] [--d-model]` | CPU end-to-end of norm packages via `tnlm train`, before GPU time |
 | 1c | `poly_init_scan.py [--set k=v ...]` | Init-time per-token scale scan of a polynomial (lagged) model on real text |

@@ -1,6 +1,7 @@
 """Smoke tests for the reusable tools in scripts/ (not part of the tnlm package, but relied on by every sweep)."""
 import pytest
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -328,3 +329,15 @@ def test_fit_lr_optimum_suggests_bracketing_point():
     assert f.suggest_next({"lrs": [1e-3, 2e-3], "ce": [4.3, 4.2]}) == 4e-3      # best at the top edge -> go up
     assert f.suggest_next({"lrs": [1e-3, 2e-3], "ce": [4.2, 4.4]}) == 5e-4      # best at the bottom edge -> go down
     assert f.suggest_next({"lrs": [1e-3, 2e-3, 4e-3], "ce": [4.3, 4.2, 4.3]}) is None
+
+
+def test_fit_scaling_law_recovers_chinchilla_parameters():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import fit_scaling_law as fsl
+    true = {"E": 1.69, "A": 406.4, "B": 410.7, "alpha": 0.34, "beta": 0.28}  # Hoffmann et al. 2022
+    pts = [(n, r * n, true["E"] + true["A"] / n ** true["alpha"] + true["B"] / (r * n) ** true["beta"])
+           for n in (38e6, 67e6, 101e6, 189e6, 304e6) for r in (5, 10, 20, 40)]
+    f = fsl.fit(pts)
+    assert abs(f["alpha"] - 0.34) < 0.02 and abs(f["beta"] - 0.28) < 0.02 and abs(f["E"] - 1.69) < 0.05, f
+    o, ref = fsl.optimal(f, 1e21), fsl.optimal(true, 1e21)
+    assert abs(math.log(o["tokens_per_param"] / ref["tokens_per_param"])) < 0.15, (o, ref)  # within ~15%

@@ -227,3 +227,12 @@ def test_run_queue_file_stops_at_failure(tmp_path):
     qf.write_text(f"{bad}\n{ok}\n")
     r = subprocess.run(["bash", str(ROOT / "scripts/run_queue_file.sh"), "0", str(qf)], capture_output=True, text=True)
     assert r.returncode == 3 and qf.read_text().strip() == str(ok)
+
+
+def test_throughput_last_n_rows(tmp_path):
+    d = tmp_path / "runB" / "parent"; d.mkdir(parents=True)
+    rows = [{"tokens": 1000 * k, "run_elapsed_seconds": k} for k in range(10)] + [{"tokens": 9000 + 500 * k, "run_elapsed_seconds": 9 + k} for k in range(1, 4)]
+    (d / "metrics.jsonl").write_text("\n".join(map(json.dumps, rows)))
+    out = subprocess.run([sys.executable, str(ROOT / "scripts/throughput.py"), str(tmp_path), "--last", "3"],
+                         capture_output=True, text=True, check=True).stdout
+    assert "500 tok/s" in out

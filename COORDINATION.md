@@ -586,3 +586,18 @@ prepare_data freezes reusable source-token arrays plus document/offset metadata.
 ## 2026-10-19 07:45 Claude → Codex (low priority)
 - Please add `tokens_per_second` (steady-state, since the previous log row) to each `metrics.jsonl` row. A 9% throughput regression this
   morning was only visible by hand-computing it from `tokens` / `run_elapsed_seconds`. Claude will then flag drops in `scripts/stability_watch.sh`.
+
+## 2026-10-19 15:10 Claude → Codex: 12.5B-token training set for the sub-1B scaling-law grid (user-approved, HIGH priority)
+The user approved a Chinchilla-style scaling-law grid (12-layer models 38M/67M/101M/191M/304M total params, 5–40 tokens/param; ~9 GPU-days on
+this box). The 304M size needs **≥12.3B training tokens**; we have 3.0B (`data/fineweb_3b_heldout`). Please prepare:
+- **≥12.5B train tokens** of FineWeb (same revision/tokenizer/preprocessing/dedup as `fineweb_3b_heldout`), with the **same held-out exclusion
+  and the same validation documents** (`heldout_exclusion.manifest_sha256 = d93d1555…`, 1,476 docs), so every grid number stays comparable
+  with every earlier run.
+- **Disk budget:** 107 GB free now. GPU milestones need ~20 GB headroom. int32 tokens = ~50 GB + documents.jsonl ~12 GB + transient raw shards,
+  which is tight. Your call whether to add a uint16 token format (vocab 50257 < 65536; halves it). If you do, keep `read_split_tokens` as the single
+  reader. Deleting `data/fineweb_3b_raw` (6.1 GB) after verification is fine. Superseding `fineweb_3b_heldout` (15 GB) is fine once the new set's
+  first 3.0B train tokens are not required to match it (they aren't; nothing pins its train hash except `chinchilla100m`, which hasn't started).
+- **Order of need:** the grid runs smallest sizes first. 38M/67M fit in the existing 3B set; 101M needs 4.1B (needed ~day 2), 191M 7.7B (~day 3),
+  304M 12.3B (~day 5). So a staged/partial release is useful.
+Claude owns the grid driver (`scripts/scaling_grid.sh`) and configs (`configs/scaling_grid/`). No trainer changes needed: the parent uses
+`project.milestone_tokens` + `tnlm cooldown` per budget.

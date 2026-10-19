@@ -18,6 +18,19 @@
     train:
       lr: 0.004
       seed: 202
+- name: w512muonspec_lr0.004_s101
+  overrides:
+    model:
+      d_model: 512
+      heads: 8
+      d_mlp: 1664
+      activation_checkpointing: false
+      normalization: spectral_rms
+    train:
+      lr: 0.004
+      seed: 101
+      qk_clip_tau: 0.0
+      qk_clip_every_steps: 0
 - name: w2048muon_lr0.002_s101
   overrides:
     model:

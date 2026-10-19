@@ -247,8 +247,13 @@ def _prepare_data(output_dir, *, source_jsonl=None, revision, max_tokens=50_000_
                         raise ValueError(f'HF raw shard changed during reading: {shard}')
                 finally:
                     close = getattr(parquet, 'close', None)
-                    if close is not None:
-                        close()
+                    try:
+                        if close is not None:
+                            close()
+                    finally:
+                        # Do not retain a bound close method or the last Arrow
+                        # batch while the next shard's reader/buffers allocate.
+                        close = parquet = batch = record = None
                 if on_shard_scanned is not None:
                     on_shard_scanned(shard, path)
     out = Path(output_dir)

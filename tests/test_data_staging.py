@@ -146,3 +146,43 @@ def test_shard_callback_failure_cleans_output(tmp_path):
     with pytest.raises(ValueError, match='HF dataset'):
         prepare_data(tmp_path/'local-hook', source_jsonl=source, revision='fixture',
                      on_shard_scanned=lambda *args: None)
+
+
+def test_shard_reader_and_last_batch_released_before_next_reader(tmp_path, monkeypatch):
+    import gc
+    import weakref
+    import pyarrow.parquet as pq
+    readers, batches, closed = [], [], []
+    class Batch:
+        def to_pylist(self):
+            return [{'id': str(len(readers)), 'text': 'A'}]
+    class Reader:
+        def __init__(self, path):
+            gc.collect()
+            assert not readers or readers[-1]() is None
+            assert not batches or batches[-1]() is None
+            readers.append(weakref.ref(self))
+        def iter_batches(self, **kwargs):
+            batch = Batch()
+            batches.append(weakref.ref(batch))
+            yield batch
+        def close(self):
+            closed.append(True)
+    monkeypatch.setattr(pq, 'ParquetFile', Reader)
+    paths = {}
+    for name in ('a.parquet', 'b.parquet'):
+        path = tmp_path/name
+        path.write_bytes(b'mocked parquet payload')
+        paths[name] = str(path)
+    class Tokenizer:
+        name, eot_token = 'lifecycle-test', 50256
+        def encode(self, text, **kwargs):
+            return [123]
+    manifest = prepare_data(tmp_path/'released', hf_dataset='fixture/fineweb', revision='a'*40,
+        hf_data_files=list(paths), hf_local_shards=paths,
+        hf_shard_checksums={name: hashlib.sha256(b'mocked parquet payload').hexdigest()
+                            for name in paths}, tokenizer=Tokenizer())
+    assert json.loads(manifest.read_text())['documents'] == 2
+    assert closed == [True, True]
+    gc.collect()
+    assert all(ref() is None for ref in [*readers, *batches])

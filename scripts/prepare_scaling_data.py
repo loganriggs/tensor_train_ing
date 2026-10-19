@@ -71,7 +71,7 @@ def worker(args, source):
             prune_scanned_shards({'shards': [declared[name]]}, args.prune_raw_root,
                                 args.report.with_suffix('.pruning.json'), append=True)
     def interrupted(signum, frame):
-        raise KeyboardInterrupt('preparation stopped by disk guard or operator')
+        raise KeyboardInterrupt('preparation stopped by operator')
     signal.signal(signal.SIGTERM, interrupted)
     prepare_data(args.out, hf_dataset=source['dataset'], revision=source['revision'],
         hf_data_files=[r['path'] for r in source['shards']],
@@ -81,6 +81,63 @@ def worker(args, source):
         exclude_validation_manifest=args.heldout_manifest,
         on_shard_scanned=shard_scanned if args.prune_raw_root else None)
 
+
+
+class DiskPauseController:
+    """Pause the worker session while this coordinator keeps monitoring free disk."""
+    def __init__(self, pgid, pause_bytes, resume_bytes):
+        if (type(pause_bytes) is not int or type(resume_bytes) is not int
+                or pause_bytes <= 0 or resume_bytes <= pause_bytes):
+            raise ValueError('disk resume threshold must exceed a positive pause threshold')
+        self.pgid, self.pause_bytes, self.resume_bytes = pgid, pause_bytes, resume_bytes
+        self.pauses = []
+        self.paused = False
+
+    def _signal(self, signum):
+        try:
+            os.killpg(self.pgid, signum)
+        except ProcessLookupError:
+            return False
+        return True
+
+    def update(self, free_bytes, elapsed):
+        if self.paused:
+            self.pauses[-1]['minimum_free_bytes'] = min(self.pauses[-1]['minimum_free_bytes'], free_bytes)
+            if free_bytes >= self.resume_bytes:
+                self._signal(signal.SIGCONT)
+                self.finish(elapsed, 'disk_recovered', free_bytes)
+                return True
+        elif free_bytes < self.pause_bytes and self._signal(signal.SIGSTOP):
+            self.paused = True
+            self.pauses.append({'start_elapsed_seconds': elapsed,
+                'free_bytes_at_pause': free_bytes, 'minimum_free_bytes': free_bytes,
+                'end_elapsed_seconds': None, 'duration_seconds': None,
+                'free_bytes_at_resume': None, 'resume_reason': None})
+            return True
+        return False
+
+    def finish(self, elapsed, reason, free_bytes=None):
+        if self.paused:
+            row = self.pauses[-1]
+            row.update(end_elapsed_seconds=elapsed,
+                       duration_seconds=max(0., elapsed-row['start_elapsed_seconds']),
+                       free_bytes_at_resume=free_bytes, resume_reason=reason)
+            self.paused = False
+
+    def continue_for_shutdown(self, elapsed):
+        # Continue even if interrupted between SIGSTOP and state accounting,
+        # or an external monitor stopped the group. Stopped Python workers
+        # cannot process SIGTERM until continued.
+        self._signal(signal.SIGCONT)
+        if self.paused:
+            self.finish(elapsed, 'operator_or_monitor_shutdown')
+
+    def report(self, elapsed):
+        total = sum(row['duration_seconds'] if row['duration_seconds'] is not None
+                    else max(0., elapsed-row['start_elapsed_seconds']) for row in self.pauses)
+        return {'pause_threshold_bytes': self.pause_bytes, 'resume_threshold_bytes': self.resume_bytes,
+                'paused': self.paused, 'pause_seconds': total, 'pauses': self.pauses,
+                'scope': 'SIGSTOP/SIGCONT whole worker process group; coordinator keeps monitoring; sampled guard, not reserved disk'}
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
@@ -93,9 +150,14 @@ def main(argv=None):
     p.add_argument('--max-tokens', type=int, default=13_000_000_000)
     p.add_argument('--max-documents', type=int, default=30_000_000)
     p.add_argument('--minimum-train-tokens', type=int, default=12_500_000_000)
-    p.add_argument('--minimum-free-bytes', type=int, default=22_000_000_000)
+    p.add_argument('--minimum-free-bytes', type=int, default=35 * 1024**3,
+                   help='pause worker process group below this free-space threshold (default35GiB)')
+    p.add_argument('--resume-free-bytes', type=int, default=40 * 1024**3,
+                   help='resume worker process group at this free-space threshold (default40GiB)')
     p.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     args = p.parse_args(argv)
+    if args.minimum_free_bytes <= 0 or args.resume_free_bytes <= args.minimum_free_bytes:
+        p.error('resume-free-bytes must exceed positive minimum-free-bytes')
     source_bytes = args.source.read_bytes()
     source = json.loads(source_bytes)
     if args.worker:
@@ -120,6 +182,10 @@ def main(argv=None):
         child = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                                  start_new_session=True)
         process = psutil.Process(child.pid)
+        disk_pause = DiskPauseController(child.pid, args.minimum_free_bytes, args.resume_free_bytes)
+        def write_pauses():
+            args.report.with_suffix('.pauses.json').write_text(
+                json.dumps(disk_pause.report(time.monotonic()-started), indent=2)+'\n')
         def interrupted(signum, frame):
             raise KeyboardInterrupt('supervisor requested stop')
         previous_handler = signal.signal(signal.SIGTERM, interrupted)
@@ -141,16 +207,18 @@ def main(argv=None):
                 peak = max(peak, rss)
                 free = shutil.disk_usage(args.out.parent).free
                 free_min = min(free_min, free)
-                if free < args.minimum_free_bytes:
-                    guard_error = f'free disk {free} below floor {args.minimum_free_bytes}'
-                    raise RuntimeError(guard_error)
+                if disk_pause.update(free, time.monotonic()-started):
+                    write_pauses()
+                    print(json.dumps({'disk_paused': disk_pause.paused, 'free_bytes': free}), flush=True)
                 if time.monotonic() - last_progress > 30:
                     print(json.dumps({'elapsed_seconds': time.monotonic()-started,
-                        'free_bytes': free, 'rss_bytes': rss, 'peak_rss_bytes': peak}), flush=True)
+                        'free_bytes': free, 'rss_bytes': rss, 'peak_rss_bytes': peak,
+                        'disk_paused': disk_pause.paused}), flush=True)
                     last_progress = time.monotonic()
                 time.sleep(.25)
         except BaseException as error:
             guard_error = guard_error or str(error)
+            disk_pause.continue_for_shutdown(time.monotonic()-started)
             try:
                 os.killpg(child.pid, signal.SIGTERM)
             except ProcessLookupError:
@@ -164,10 +232,15 @@ def main(argv=None):
                     pass
                 child.wait()
         finally:
+            disk_pause.finish(time.monotonic()-started, 'worker_exited')
+            write_pauses()
             signal.signal(signal.SIGTERM, previous_handler)
     elapsed = time.monotonic() - started
     report = {'returncode': child.returncode, 'error': guard_error,
-              'elapsed_seconds': elapsed, 'peak_process_tree_rss_bytes': peak,
+              'elapsed_seconds': elapsed, 'disk_pause': disk_pause.report(elapsed),
+              'active_elapsed_seconds': max(0., elapsed-disk_pause.report(elapsed)['pause_seconds']),
+              'throughput_scope': 'wall-clock preparation time includes disk pauses',
+              'peak_process_tree_rss_bytes': peak,
               'peak_parent_rss_bytes': parent_peak, 'minimum_free_bytes_observed': free_min,
               'source_spec_sha256': source_digest, 'frozen_source_spec': str(frozen_source), 'implementation_sha256': implementations,
               'rss_scope': 'sampled summed parent/descendant RSS every0.25s; shared pages counted per process',

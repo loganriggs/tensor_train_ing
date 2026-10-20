@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.5/parent": {
+      "status": "running",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 77.96712000000001,
+      "spent_usd": 0.0,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime"
+    }
+  }
+}

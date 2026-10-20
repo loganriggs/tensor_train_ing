@@ -743,3 +743,16 @@ The H100 configs use context 2048, but every earlier run used 512. Same tokens a
 So Muon's edge shrinks with batch and horizon but stays positive. LR scaling with batch, 8k → 131k: Muon ×2.5 (3.5e-3 → 8.9e-3); AdamW ×1.7
 (7.8e-4 → 1.3e-3, below √16 = 4). Both are below linear scaling. For a Muon H100 config: start the day-1 bracket near 8e-3 × the horizon factor
 from `lr_horizon2` (pending, ~08:50), and treat depth 24 as untested for Muon's LR.
+
+## LR horizon redo without data repetition (`configs/lr_horizon2`; 12×512 AdamW, 300M cooled tokens, 13B set, quota 8160; 09:16 Oct 20)
+The original 300M points read 1.89 epochs (red-team A1). Redone on fresh data:
+
+| LR | 3.2e-4 | 4.5e-4 | 6.4e-4 | 9e-4 |
+| --- | ---: | ---: | ---: | ---: |
+| CE (300M tokens) | 4.151 | **4.145** | 4.156 | 4.148 |
+
+**Flat: all four within 0.011 (≈ evaluation noise), with no identifiable minimum** (`fit_lr_optimum.py … --exclude '^lr_horizon/.*h300m'`: "no
+minimum"). So the 300M optimum is undetermined within 3.2e-4–9e-4, and the D^−0.10 rule's 300M anchor (5.7e-4, from the repeated-data runs)
+lies inside the same flat basin. The preliminary 3-point fit (exponent −0.26, 08:50) was noise and was not applied. **Consequences:** at
+long horizons the LR basin is wide (≥ 2.8× at 300M), so the exact H100 LR matters less than feared. The current AdamW H100 LR (4e-4) and day-1
+bracket {3e-4, 4e-4, 5.5e-4} sit inside it. The H100 configs are unchanged, and the proposed 1.2B-token horizon point is withdrawn (low value).

@@ -756,3 +756,9 @@ minimum"). So the 300M optimum is undetermined within 3.2e-4–9e-4, and the D^�
 lies inside the same flat basin. The preliminary 3-point fit (exponent −0.26, 08:50) was noise and was not applied. **Consequences:** at
 long horizons the LR basin is wide (≥ 2.8× at 300M), so the exact H100 LR matters less than feared. The current AdamW H100 LR (4e-4) and day-1
 bracket {3e-4, 4e-4, 5.5e-4} sit inside it. The H100 configs are unchanged, and the proposed 1.2B-token horizon point is withdrawn (low value).
+
+**Grid LR check, s38m (11:20 Oct 20):** at 10 tokens/param, LR ×0.5 (1.55e-3) → **4.358** vs ×1 (3.1e-3, the main grid run) 4.391: −0.033, well
+above noise. The derived grid LRs (Muon 50M-token optima × the AdamW horizon rule) are too high, at least at the small end. Consequences and
+actions: (1) the s38m main points are off-optimal by ≥ 0.03, which biases the fit, so a re-run at the bracketed best LR is likely (4.6 GPU-h);
+(2) queue reordered: s38m ×0.25 added to bracket, and s67m's ×0.5/×2 checks now run **before** the s67m main run so that run uses the better LR;
+(3) the same check-first pattern will be applied to s101m–s304m (two short tpp-10 runs per size before its multi-day parent).

@@ -713,3 +713,11 @@ source revision as the 3B set; sampler opens and batches verified), then chinchi
 - **Muon's optimal LR grows with batch** (≥7e-3 at 131k vs ~3.5e-3 at 8k), roughly √(16) = 4× → ≤1.4e-2. AdamW's shrinks or holds (≤1.6e-3 vs a
   scaled 7.8e-4 × √16 = 3.1e-3, which was clearly too high). So the critical-batch √-rule measured for AdamW does not transfer to Muon.
 - The grid stays on Muon (it runs at 8k tokens/update, where the gap is −0.14).
+
+### Grid results so far
+| size | 5 tok/param | 10 | 20 | 40 |
+| --- | ---: | ---: | ---: | ---: |
+| s38m (38.1M total / 12.4M non-emb; Muon 3.1e-3, batch 8192) | 4.502 (0.19B) | 4.391 (0.38B) | 4.291 (0.76B) | **4.187** (1.53B) |
+
+s38m (01:00 Oct 20): CE falls ~0.10–0.11 per doubling of tokens, smoothly, so there's no sign of saturation at 40 tokens/param for this size.
+Read 2.98B of the 3.01B-token split (`check_data_epochs.py`: no wrap). The fit (`scripts/fit_scaling_law.py`) needs ≥ 3 sizes.

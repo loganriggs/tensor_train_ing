@@ -767,3 +767,9 @@ actions: (1) the s38m main points are off-optimal by ≥ 0.03, which biases the 
 **s38m LR bracket (13:25 Oct 20; tpp10):** ×0.25 4.361, ×0.5 4.358, ×1 4.391, ×2 4.449 around 3.1e-3, so the fitted optimum is **1.12e-3**
 (×0.36; interior; spread 0.092, not flat), predicting CE 4.356 at tpp10 (−0.035 vs the grid run). `sizes.yaml` updated; the old s38m runs are
 archived (excluded from the fit); s38m re-runs after s67m. s67m gets a ×0.25 check too (same pattern expected) before its main run.
+
+**Grid timeline (14:20 UTC Oct 20, from measured throughput: s38m/s67m ~80k tok/s, ~20 min overhead per job; ±15%):** s67m checks → 21:20 UTC
+Oct 20; s67m main → 07:50 Oct 21; s38m re-run → 14:10 Oct 21; chinchilla100m → 19:40 Oct 22; s101m (2 checks at tpp10 + main) → 23:50 Oct 23
+(first 3-size fit); s191m → 15:00 Oct 26; s304m → ~13:00 Nov 1. **Plan change:** the LR checks for s191m/s304m run at **5** tokens/param, not 10
+(s304m checks 53 → 27 h, s191m 24 → 12 h; the horizon rule shifts the optimum only ~7% between tpp 5 and 10). The check multipliers for s101m+ are set
+from the s67m results (the s38m optimum was ×0.36 of the derived LR).

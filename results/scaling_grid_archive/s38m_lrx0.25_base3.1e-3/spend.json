@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "runs": {
+    "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.25/parent": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.5047739394661989,
+      "parent_checkpoint": null,
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 4307.149044982973
+    },
+    "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.25/s38m_lrx0.25_tpp10/cooldown": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.06162574825933285,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.25/parent/milestone-000343336550",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 525.8418908120366
+    },
+    "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.25/s38m_lrx0.25_tpp10/evaluation": {
+      "status": "complete",
+      "rate_usd_per_hour": 0.4219,
+      "reserved_usd": 0.0,
+      "spent_usd": 0.010415025656928381,
+      "parent_checkpoint": "/workspace/tensor_train_ing/runs/scaling_grid/s38m_lrx0.25/s38m_lrx0.25_tpp10/cooldown/final",
+      "cost_margin_fraction": 0.1,
+      "stage": "C",
+      "kind": "runtime",
+      "elapsed_seconds": 88.86961925798096
+    }
+  }
+}

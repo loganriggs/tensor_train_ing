@@ -717,7 +717,8 @@ source revision as the 3B set; sampler opens and batches verified), then chinchi
 ### Grid results so far
 | size | 5 tok/param | 10 | 20 | 40 |
 | --- | ---: | ---: | ---: | ---: |
-| s38m (38.1M total / 12.4M non-emb; Muon 3.1e-3, batch 8192) | 4.502 (0.19B) | 4.391 (0.38B) | 4.291 (0.76B) | **4.187** (1.53B) |
+| ~~s38m at 3.1e-3~~ (superseded: LR ×2.8 too high; archived in `runs/scaling_grid_archive/s38m_base3.1e-3`) | 4.502 (0.19B) | 4.391 (0.38B) | 4.291 (0.76B) | 4.187 (1.53B) |
+| s38m at its fitted LR 1.12e-3 | queued (after s67m) | | | |
 
 s38m (01:00 Oct 20): CE falls ~0.10–0.11 per doubling of tokens, smoothly, so there's no sign of saturation at 40 tokens/param for this size.
 Read 2.98B of the 3.01B-token split (`check_data_epochs.py`: no wrap). The fit (`scripts/fit_scaling_law.py`) needs ≥ 3 sizes.
@@ -762,3 +763,7 @@ above noise. The derived grid LRs (Muon 50M-token optima × the AdamW horizon ru
 actions: (1) the s38m main points are off-optimal by ≥ 0.03, which biases the fit, so a re-run at the bracketed best LR is likely (4.6 GPU-h);
 (2) queue reordered: s38m ×0.25 added to bracket, and s67m's ×0.5/×2 checks now run **before** the s67m main run so that run uses the better LR;
 (3) the same check-first pattern will be applied to s101m–s304m (two short tpp-10 runs per size before its multi-day parent).
+
+**s38m LR bracket (13:25 Oct 20; tpp10):** ×0.25 4.361, ×0.5 4.358, ×1 4.391, ×2 4.449 around 3.1e-3, so the fitted optimum is **1.12e-3**
+(×0.36; interior; spread 0.092, not flat), predicting CE 4.356 at tpp10 (−0.035 vs the grid run). `sizes.yaml` updated; the old s38m runs are
+archived (excluded from the fit); s38m re-runs after s67m. s67m gets a ×0.25 check too (same pattern expected) before its main run.

@@ -8,7 +8,7 @@
 # data_manifest: the 3B set covers s38m (1.5B) and s67m (2.7B); larger sizes need the >=12.5B set requested from Codex (COORDINATION 15:10).
 s38m:
   model: {d_model: 256, heads: 4, d_mlp: 832, activation_checkpointing: false}
-  lr: 0.0031
+  lr: 0.00112   # 13:30 Oct 20: fitted optimum at tpp10 from x0.25/0.5/1/2 checks around 3.1e-3 (4.361/4.358/4.391/4.449); was 3.1e-3 (x2.8 too high)
   data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
 s67m:
   train: {global_prediction_tokens_per_update: 8160}

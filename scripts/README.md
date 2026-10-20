@@ -9,6 +9,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 2 | `run_queue_file.sh WAIT_PID QUEUE_FILE` | Same, but entries live in a file re-read before each one (reorder a running queue by editing `runs/queue.txt`) |
 | 2 | `codex_msg.sh "text"` | Message Codex in tmux and verify it was submitted (retries Enter; warns if it stays in the input box) |
 | 2 | `commit_if_green.sh "msg" path ...` | Commit + push only if the fast suite passes (gated on pytest exit code) |
+| 2 | `review_snapshot.sh` | All standard code-health checks in one command (suite, scratch, tree, orphans, data epochs, disk, module sizes, commits) |
 | | `run_candidates_v2.sh EXP MIN_TOK_S "KEEP" [MAX_S] [DEVICE]` | One sweep, one candidate at a time, in bounded disk (called by `run_queue.sh`) |
 | 1b | `norm_canary.py OUT [--norms ...] [--layers] [--d-model]` | CPU end-to-end of norm packages via `tnlm train`, before GPU time |
 | 1c | `poly_init_scan.py [--set k=v ...]` | Init-time per-token scale scan of a polynomial (lagged) model on real text |

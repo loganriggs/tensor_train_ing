@@ -6,7 +6,7 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 MSG=$1; shift
 LOG=$(mktemp)
-if ! OMP_NUM_THREADS=2 nice /venv/main/bin/python -m pytest -n 6 -m "not slow" -q -p no:warnings > "$LOG" 2>&1; then
+if ! OMP_NUM_THREADS=2 nice /venv/main/bin/python -m pytest -n 6 -m "not slow" -p no:warnings > "$LOG" 2>&1; then
   echo "NOT COMMITTED: fast suite failed"; grep -E "^FAILED|^ERROR" "$LOG" | head -10; exit 1
 fi
 tail -1 "$LOG"

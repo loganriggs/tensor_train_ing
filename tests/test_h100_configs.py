@@ -23,6 +23,7 @@ def test_h100_config_invariants(path):
     else:
         assert c.train.optimizer == "adamw" and c.model.width_scaling_base == 512
     assert c.train.global_prediction_tokens_per_update >= 131072
+    assert c.train.compile is False  # the distributed trainer rejects compile (red-team D1, 2026-10-20)
     # No discarded micro-batch rounds: a 4x2048 (or 16x512) micro-batch always holds >= 8160 targets (min 8165-8167 measured), so the quota must be a
     # multiple of 8 ranks x 8160; 262144 read 1.25x the trained tokens (red-team 22:40 Oct 19).
     assert c.raw["data"]["micro_batch_size"] * c.raw["data"]["context"] == 8192

@@ -44,13 +44,13 @@ project:
   stage: D
   total_budget_usd: 1000
 train:
-  compile: true
+  compile: false   # tnlm/distributed_train.py rejects compile ("compile is unsupported"); throughput penalty vs compiled is UNMEASURED (red-team D1)
   deterministic: false
   global_prediction_tokens_per_update: 261120  # = 4 rounds x 8 ranks x 8160. Each round, every rank draws one 4x2048 micro-batch
   # (>= 8167 targets measured); 262144 needed a 5th round that was ~99% discarded (1.25x data read). Redo if the GPU count is not 8.
   lr: 0.0004
   optimizer: adamw
   qk_clip_every_steps: 50
-  qk_clip_tau: 100.0
+  qk_clip_tau: 100.0   # BLOCKER: distributed_train raises 'QK clipping currently supports serial training only' (red-team D1). Variant A cannot launch on 8 GPUs as specified.
   rung_total_tokens: 28000000000
   seed: 101

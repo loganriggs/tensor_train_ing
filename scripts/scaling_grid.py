@@ -211,6 +211,7 @@ def main(argv=None):
     ap.add_argument("--plan", action="store_true", help="print every size's plan (default budgets) and exit")
     ap.add_argument("--grid-dir", default=str(GRID), help="directory with base.yaml + sizes.yaml (tests use a tiny one)")
     ap.add_argument("--runs-dir", default=str(ROOT / "runs"))
+    ap.add_argument("--write-job", action="store_true", help="write configs/scaling_grid/jobs/<tag>[_tpp<r>].sh for runs/queue.txt and exit")
     a = ap.parse_args(argv)
     tpps = [float(x) for x in a.tpp.split(",")]
     if a.plan:
@@ -218,6 +219,15 @@ def main(argv=None):
             print(plan_line(build(s, 1.0, tpps, Path(a.grid_dir), Path(a.runs_dir))))
         return 0
     b = build(a.size, a.lr_mult, tpps, Path(a.grid_dir), Path(a.runs_dir))
+    if a.write_job:
+        args = [a.size] + ([f"--lr-mult {a.lr_mult:g}"] if a.lr_mult != 1 else []) + ([f"--tpp {a.tpp}"] if a.tpp != "5,10,20,40" else [])
+        name = b["tag"] + (f"_tpp{a.tpp.replace(',', '-')}" if a.tpp != "5,10,20,40" else "")
+        job = GRID / "jobs" / f"{name}.sh"
+        job.write_text("#!/bin/bash\n# Queue entry for scripts/run_queue_file.sh (runs/queue.txt); written by scaling_grid.py --write-job.\n"
+                       f'cd "$(dirname "$0")/../../.." && exec /venv/main/bin/python scripts/scaling_grid.py {" ".join(args)}\n')
+        job.chmod(0o755)
+        print(job.relative_to(ROOT))
+        return 0
     print(plan_line(b), flush=True)
     return 0 if a.dry_run else run(b, a.device, a.max_seconds)
 

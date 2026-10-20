@@ -25,7 +25,7 @@ Each tool's docstring or header has full usage. Typical flow for a new experimen
 | 4c | `check_contamination.py --train DIR` | 13-gram overlap of validation docs with a training-split sample (near-duplicate leakage the exact-match exclusion misses) |
 | 4d | `fit_lr_optimum.py [--pattern ...]` | Per-group LR optimum (quadratic in log LR) and power law of the optimum across groups |
 | 4d | `throughput.py RUN_DIR [...]` | Steady-state tokens/s per run (second half of metrics.jsonl); catches throughput regressions |
-| 4e | `scaling_grid.py SIZE [--lr-mult M] [--tpp 5,10,20,40] [--plan]` | Scaling-law grid: one constant-LR parent per size, cooled branch + evaluation per token budget; resumable, prunes states |
+| 4e | `scaling_grid.py SIZE [--lr-mult M] [--tpp 5,10,20,40] [--plan] [--write-job]` | Scaling-law grid: one constant-LR parent per size, cooled branch + evaluation per token budget; resumable, prunes states |
 | 4e | `fit_scaling_law.py [--params total\|nonemb] [--compute C ...]` | Chinchilla fit L = E + A/N^α + B/D^β of the grid evaluations (Huber/L-BFGS, torch); compute-optimal N, D, tokens/param |
 | 4d | `find_runs.py KEY=VALUE ... [--top N]` | Evaluated runs matching training-descriptor filters, best CE first (like-for-like comparators) |
 | 5 | `export_results.py` | Weight-free mirror of runs/ into git-tracked results/ |

@@ -286,3 +286,14 @@ def test_contamination_ngram_hashes_match_shared_windows():
     a = np.arange(40, dtype=np.int32); b = np.r_[np.full(5, 7), a[10:30], np.full(5, 9)].astype(np.int32)
     ha, hb = cc.ngram_hashes(a), cc.ngram_hashes(b)
     assert len(ha) == 40 - 12 and np.isin(hb, ha).sum() == 20 - 12  # exactly the windows inside the shared 20-token span
+
+
+def test_fit_lr_optimum_exclude_drops_matching_experiments(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import fit_lr_optimum as f
+    for exp, lr, ce in (("old", 0.001, 9.0), ("new", 0.002, 4.0)):
+        d = tmp_path / exp / f"h300m_lr{lr}_s101" / "evaluation"; d.mkdir(parents=True)
+        (d / "evaluation.json").write_text(json.dumps({"ce": ce}))
+    pat = r"h(?P<group>\d+)m_lr(?P<lr>[0-9.e-]+)_s101"
+    assert set(f.collect(tmp_path, pat)[300]) == {0.001, 0.002}
+    assert set(f.collect(tmp_path, pat, exclude=r"^old/")[300]) == {0.002}

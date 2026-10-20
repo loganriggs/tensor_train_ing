@@ -19,10 +19,13 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def collect(runs: Path, pattern: str, also=()) -> dict:
+def collect(runs: Path, pattern: str, also=(), exclude=None) -> dict:
     rxs = [re.compile(p) for p in (pattern, *also)]
+    ex = re.compile(exclude) if exclude else None
     pts = {}
     for f in runs.rglob("evaluation/evaluation.json"):
+        if ex and ex.search(str(f.relative_to(runs))):
+            continue
         name = f.parent.parent.name
         m = next((r.fullmatch(name) for r in rxs if r.fullmatch(name)), None)
         if not m:
@@ -71,8 +74,9 @@ def main(argv=None):
     ap.add_argument("--runs", default=str(ROOT / "runs"))
     ap.add_argument("--also", nargs="*", default=[r"w(?P<group>512)_lr(?P<lr>[0-9.e-]+)_s101"],
                     help="extra patterns (default: plain w512 runs, identical to width-scaled at the 512 base width)")
+    ap.add_argument("--exclude", help="regex on the evaluation path relative to --runs; matching runs are skipped (e.g. '^lr_horizon/' for runs that read past one epoch)")
     a = ap.parse_args(argv)
-    res = fit(collect(Path(a.runs), a.pattern, a.also))
+    res = fit(collect(Path(a.runs), a.pattern, a.also, a.exclude))
     for g, r in res.items():
         pts = ", ".join(f"{lr:g}:{ce:.3f}" for lr, ce in zip(r["lrs"], r["ce"]))
         o = "n/a (<3 LRs)" if r["opt"] is None and len(r["lrs"]) < 3 else (f"{r['opt']:.2e}" if r["opt"] else "no minimum")

@@ -13,7 +13,7 @@ s38m:
 s67m:
   train: {global_prediction_tokens_per_update: 8160}
   model: {d_model: 384, heads: 6, d_mlp: 1248, activation_checkpointing: false}
-  lr: 0.0028
+  lr: 0.000732   # apply_grid_lr.py: fitted interior optimum from 3 tpp10 checks (CE spread 0.131); was 0.0028
   data_manifest: /workspace/tensor_train_ing/data/fineweb_3b_heldout/manifest.json
 s101m:
   train: {global_prediction_tokens_per_update: 8160}

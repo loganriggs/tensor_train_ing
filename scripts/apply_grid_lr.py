@@ -53,7 +53,8 @@ def main(argv=None):
     r = flo.fit({0: pts})[0] if len(pts) >= 3 else {"opt": None, "interior": False, "ce": list(pts.values())}
     spread = (max(r["ce"]) - min(r["ce"])) if r["ce"] else 0.0
     best_lr = min(pts, key=pts.get) if pts else None
-    at_edge = best_lr is not None and len(pts) >= 2 and best_lr in (min(pts), max(pts))
+    lrs = sorted(pts)
+    at_edge = flo.suggest_next({"lrs": lrs, "ce": [pts[x] for x in lrs]}) is not None  # same edge rule as fit_lr_optimum NEXT hints
     if at_edge and spread >= flo.FLAT_CE:
         # the best measured point is at the edge of the checks: a quadratic minimum hugging the edge is not trustworthy (s67m, 2026-10-20)
         new, why = best_lr, f"best check at the EDGE ({best_lr:.3g}); used it, NEEDS_BRACKET one x0.5 step further"

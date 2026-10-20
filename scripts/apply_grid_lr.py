@@ -4,7 +4,8 @@
 
 Collects SIZE's evaluated check runs (runs/scaling_grid/<SIZE>_lrx*/<SIZE>_lrx*_tpp<r>/ and, if present, <SIZE>/<SIZE>_tpp<r>/), reading each LR from
 its training descriptor. It fits CE = a·log(lr)² + b·log(lr) + c (scripts/fit_lr_optimum.fit). If the optimum is interior and the sweep is not flat
-(CE range ≥ fit_lr_optimum.FLAT_CE), that optimum is written; otherwise the current LR × --fallback-mult (default: the s38m measured ratio 0.36) is
+(CE range ≥ fit_lr_optimum.FLAT_CE) and the best measured check is not at an edge, that optimum is written; if the best check is at an
+edge, its LR is written and NEEDS_BRACKET is printed; otherwise the current LR × --fallback-mult (default: the s38m measured ratio 0.36) is
 written. The old LR, the new LR and the reason go into a YAML comment and stdout. Refuses if SIZE's main run directory already exists, so it never
 changes the LR of a run in progress.
 """
@@ -51,7 +52,12 @@ def main(argv=None):
     pts = checks(runs, a.size, a.tpp)
     r = flo.fit({0: pts})[0] if len(pts) >= 3 else {"opt": None, "interior": False, "ce": list(pts.values())}
     spread = (max(r["ce"]) - min(r["ce"])) if r["ce"] else 0.0
-    if r["opt"] and r["interior"] and spread >= flo.FLAT_CE:
+    best_lr = min(pts, key=pts.get) if pts else None
+    at_edge = best_lr is not None and len(pts) >= 2 and best_lr in (min(pts), max(pts))
+    if at_edge and spread >= flo.FLAT_CE:
+        # the best measured point is at the edge of the checks: a quadratic minimum hugging the edge is not trustworthy (s67m, 2026-10-20)
+        new, why = best_lr, f"best check at the EDGE ({best_lr:.3g}); used it, NEEDS_BRACKET one x0.5 step further"
+    elif r["opt"] and r["interior"] and spread >= flo.FLAT_CE:
         new, why = r["opt"], f"fitted interior optimum from {len(pts)} tpp{a.tpp} checks (CE spread {spread:.3f})"
     else:
         new, why = old * a.fallback_mult, f"fallback x{a.fallback_mult} (checks: {len(pts)} points, interior={r['interior']}, spread {spread:.3f})"

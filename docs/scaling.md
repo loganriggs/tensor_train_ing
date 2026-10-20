@@ -773,3 +773,10 @@ Oct 20; s67m main → 07:50 Oct 21; s38m re-run → 14:10 Oct 21; chinchilla100m
 (first 3-size fit); s191m → 15:00 Oct 26; s304m → ~13:00 Nov 1. **Plan change:** the LR checks for s191m/s304m run at **5** tokens/param, not 10
 (s304m checks 53 → 27 h, s191m 24 → 12 h; the horizon rule shifts the optimum only ~7% between tpp 5 and 10). The check multipliers for s101m+ are set
 from the s67m results (the s38m optimum was ×0.36 of the derived LR).
+
+**s67m LR (20:52 Oct 20; first unattended apply step):** tpp10 checks ×0.25 (7e-4) 4.082, ×0.5 4.096, ×2 4.213 around the derived 2.8e-3; the apply
+step wrote the fitted 7.32e-4 (committed f0d5aeb) and the s67m main run started with it. Caveat: **the best check was the lowest LR**, so the optimum
+may be below 7e-4 (fit minimum hugging the edge). The curve is shallow (×0.25 vs ×0.5: 0.013), so the main run continues (expected loss
+≤ ~0.005). The optimum ratio to the derived LR is falling with size: s38m ×0.36, s67m ≲ ×0.26. Fixes: `apply_grid_lr.py` now treats an edge best as
+unbracketed (writes the best check's LR, prints NEEDS_BRACKET; tested with this pattern); s101m gets an extra ×0.09 check; s191m/s304m checks
+shifted to ×0.09/0.18/0.36 (was 0.18/0.36/0.72).

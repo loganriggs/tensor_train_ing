@@ -111,3 +111,17 @@ def test_apply_grid_lr_fits_checks_and_refuses_started_runs(tmp_path):
     (runs / "s9m").mkdir()  # main run started -> must refuse
     r2 = subprocess.run(script, capture_output=True, text=True)
     assert r2.returncode == 1 and "REFUSED" in r2.stdout
+
+
+def test_apply_grid_lr_edge_best_uses_best_check(tmp_path):
+    sizes = tmp_path / "sizes.yaml"
+    sizes.write_text("s9m:\n  model: {d_model: 64}\n  lr: 0.0028\n  data_manifest: x\n")
+    runs = tmp_path / "runs"
+    for mult, ce in ((0.25, 4.0823), (0.5, 4.0955), (2.0, 4.2133)):  # the s67m pattern: best at the lowest LR
+        d = runs / f"s9m_lrx{mult:g}" / f"s9m_lrx{mult:g}_tpp10" / "evaluation"; d.mkdir(parents=True)
+        (d / "evaluation.json").write_text(json.dumps({"ce": ce, "training_descriptor": {"lr": 0.0028 * mult}}))
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/apply_grid_lr.py"), "s9m", "--runs", str(runs), "--sizes", str(sizes)],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "NEEDS_BRACKET" in r.stdout, r.stdout
+    import yaml
+    assert abs(yaml.safe_load(sizes.read_text())["s9m"]["lr"] - 0.0007) < 1e-9

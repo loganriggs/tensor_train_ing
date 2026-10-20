@@ -32,3 +32,5 @@ include = ["tnlm*"]
 testpaths = ["tests"]
 pythonpath = [".", "tests"]
 addopts = "-q"
+# Keep tmp_path dirs only for FAILED tests: passing runs of the data/checkpoint tests left several GB per session in /tmp (2026-10-20: /tmp hit 39 GB).
+tmp_path_retention_policy = "failed"

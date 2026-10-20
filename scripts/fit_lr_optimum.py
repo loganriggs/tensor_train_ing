@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FLAT_CE = 0.015  # ~3x the evaluation noise: a sweep whose CE range is below this has no identifiable optimum (lr_horizon2, 2026-10-20)
 
 
-def collect(runs: Path, pattern: str, also=(), exclude=None) -> dict:
+def collect(runs: Path, pattern: str, also=(), exclude=None, descriptor_lr=False) -> dict:
     rxs = [re.compile(p) for p in (pattern, *also)]
     ex = re.compile(exclude) if exclude else None
     pts = {}
@@ -31,11 +31,13 @@ def collect(runs: Path, pattern: str, also=(), exclude=None) -> dict:
         m = next((r.fullmatch(name) for r in rxs if r.fullmatch(name)), None)
         if not m:
             continue
-        g, lr = m.group("group"), float(m.group("lr"))
+        d = json.load(open(f))
+        g = m.group("group")
+        lr = float(d["training_descriptor"]["lr"]) if descriptor_lr else float(m.group("lr"))
         g = int(g) if g.isdigit() else g  # widths are numeric; optimizer/variant names are fine too
         prev = pts.get((g, lr))
         if prev is None or f.stat().st_mtime > prev[1]:
-            pts[(g, lr)] = (json.load(open(f))["ce"], f.stat().st_mtime)
+            pts[(g, lr)] = (d["ce"], f.stat().st_mtime)
     out = {}
     for (g, lr), (ce, _) in pts.items():
         out.setdefault(g, {})[lr] = ce
@@ -75,9 +77,10 @@ def main(argv=None):
     ap.add_argument("--runs", default=str(ROOT / "runs"))
     ap.add_argument("--also", nargs="*", default=[r"w(?P<group>512)_lr(?P<lr>[0-9.e-]+)_s101"],
                     help="extra patterns (default: plain w512 runs, identical to width-scaled at the 512 base width)")
+    ap.add_argument("--descriptor-lr", action="store_true", help="take each run's LR from training_descriptor.lr (grid LR checks name a multiplier, not the LR); --pattern then needs only a `group`")
     ap.add_argument("--exclude", help="regex on the evaluation path relative to --runs; matching runs are skipped (e.g. '^lr_horizon/' for runs that read past one epoch)")
     a = ap.parse_args(argv)
-    res = fit(collect(Path(a.runs), a.pattern, a.also, a.exclude))
+    res = fit(collect(Path(a.runs), a.pattern, a.also, a.exclude, a.descriptor_lr))
     for g, r in res.items():
         pts = ", ".join(f"{lr:g}:{ce:.3f}" for lr, ce in zip(r["lrs"], r["ce"]))
         o = "n/a (<3 LRs)" if r["opt"] is None and len(r["lrs"]) < 3 else (f"{r['opt']:.2e}" if r["opt"] else "no minimum")

@@ -297,3 +297,13 @@ def test_fit_lr_optimum_exclude_drops_matching_experiments(tmp_path):
     pat = r"h(?P<group>\d+)m_lr(?P<lr>[0-9.e-]+)_s101"
     assert set(f.collect(tmp_path, pat)[300]) == {0.001, 0.002}
     assert set(f.collect(tmp_path, pat, exclude=r"^old/")[300]) == {0.002}
+
+
+def test_fit_lr_optimum_descriptor_lr_for_multiplier_names(tmp_path):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import fit_lr_optimum as f
+    for tag, lr, ce in (("s38m", 3e-3, 4.39), ("s38m_lrx0.5", 1.5e-3, 4.36), ("s38m_lrx2", 6e-3, 4.45)):
+        d = tmp_path / tag / f"{tag}_tpp10" / "evaluation"; d.mkdir(parents=True)
+        (d / "evaluation.json").write_text(json.dumps({"ce": ce, "training_descriptor": {"lr": lr}}))
+    pts = f.collect(tmp_path, r"s(?P<group>\d+)m(_lrx[0-9.]+)?_tpp10", descriptor_lr=True)
+    assert pts == {38: {3e-3: 4.39, 1.5e-3: 4.36, 6e-3: 4.45}}

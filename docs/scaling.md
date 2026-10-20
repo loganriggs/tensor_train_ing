@@ -738,3 +738,8 @@ The H100 configs use context 2048, but every earlier run used 512. Same tokens a
   worse. At 50M tokens the model can't use the extra context yet; the benefit should come with the H100's ~28B tokens. Kept finals deleted after the
   512-context re-evaluation (`evaluation_ctx512/`).
 - **H100: keep context 2048** (stability verified; only the long-horizon benefit is untested here).
+**Bracketed (`configs/muon_bigbatch2`, 03:49 Oct 20).** Muon 1.4e-2 → 4.220 (optimum fit ≈ 8.9e-3); AdamW 1.1e-3 → 4.261, 8e-4 → 4.312 (optimum fit
+≈ 1.3e-3). Best points: **Muon 4.205 vs AdamW 4.249: −0.044 at 131k tokens/update, 200M tokens, both bracketed** (vs −0.14 at 8k batch / 50M tokens).
+So Muon's edge shrinks with batch and horizon but stays positive. LR scaling with batch, 8k → 131k: Muon ×2.5 (3.5e-3 → 8.9e-3); AdamW ×1.7
+(7.8e-4 → 1.3e-3, below √16 = 4). Both are below linear scaling. For a Muon H100 config: start the day-1 bracket near 8e-3 × the horizon factor
+from `lr_horizon2` (pending, ~08:50), and treat depth 24 as untested for Muon's LR.

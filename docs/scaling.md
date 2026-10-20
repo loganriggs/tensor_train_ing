@@ -721,3 +721,20 @@ source revision as the 3B set; sampler opens and batches verified), then chinchi
 
 s38m (01:00 Oct 20): CE falls ~0.10–0.11 per doubling of tokens, smoothly, so there's no sign of saturation at 40 tokens/param for this size.
 Read 2.98B of the 3.01B-token split (`check_data_epochs.py`: no wrap). The fit (`scripts/fit_scaling_law.py`) needs ≥ 3 sizes.
+
+## Context 2048 (red-team A2; `configs/context2048`; 100M, 50M cooled tokens, seed 101; 01:38 Oct 20)
+The H100 configs use context 2048, but every earlier run used 512. Same tokens and quota (8160), 4×2048 micro-batches:
+
+| arm | ctx 512 → eval 512 | ctx 2048 → eval 2048 | ctx 2048 → eval 512 | tok/s at 2048 |
+| --- | ---: | ---: | ---: | ---: |
+| Muon pre_rms 4e-3 | 4.645 | **4.635** | 4.670 | 51k |
+| AdamW pre_rms 9e-4 | 4.787 | 4.794 | 4.818 | 58k |
+| AdamW spectral 7.8e-4 | 4.766 | 4.774 | 4.796 | 49k |
+
+- **Stable at 2048 for all three**: end-of-run max |S1·S2| 131 / 909 / 218 and MLP kurtosis 103 / 260 / 88, lower than the 512 runs, so the
+  softmax-free attention handles the longer sums at this scale. (The 6.5–6.6 loss at step 6000 in every arm is one hard batch in the shared data order.)
+- **Rankings preserved** (Muon < spectral < pre_rms at both contexts), so the 512-context recipe findings transfer.
+- **Cost at this horizon:** ~15% lower throughput. At its own context the 2048 model ties the 512 one (±0.01); on 512-token windows it's 0.025–0.03
+  worse. At 50M tokens the model can't use the extra context yet; the benefit should come with the H100's ~28B tokens. Kept finals deleted after the
+  512-context re-evaluation (`evaluation_ctx512/`).
+- **H100: keep context 2048** (stability verified; only the long-horizon benefit is untested here).

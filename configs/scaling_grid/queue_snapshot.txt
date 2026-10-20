@@ -2,6 +2,8 @@
 # scaling-law grid (user-approved 15:05 Oct 19); s101m/s191m/s304m on data/fineweb_13b_heldout (audit passed 19:50 Oct 19)
 # red-team 22:40 Oct 19: context-2048 check (H100 uses 2048, never trained) and LR-horizon redo without data repetition
 # 11:25 Oct 20: s38m x0.5 beat x1 by 0.033 at tpp10, so bracket s38m (x0.25) and run s67m's LR checks BEFORE its main run
+# 14:50 Oct 20: Codex's bounded (540 s) 1B eager-vs-compiled benchmark, for the H100 cost estimate
+configs/queue_jobs/compile_penalty_1b.sh
 configs/scaling_grid/jobs/s67m_lrx2_tpp10.sh
 configs/scaling_grid/jobs/s67m_lrx0.25_tpp10.sh
 configs/scaling_grid/jobs/s67m.sh

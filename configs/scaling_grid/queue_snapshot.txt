@@ -10,6 +10,19 @@ configs/scaling_grid/jobs/s67m.sh
 configs/scaling_grid/jobs/s38m.sh
 # chinchilla100m moved ahead of s101m+ (red-team): the only long-horizon (2B-token) Muon vs AdamW test; the grid assumes Muon wins there
 chinchilla100m:40000:43200
+# s101m LR checks (x0.18/0.36/0.72 of the derived 2.5e-3, centred on the s38m ratio) + apply step, then main
+configs/scaling_grid/jobs/s101m_lrx0.18_tpp10.sh
+configs/scaling_grid/jobs/s101m_lrx0.36_tpp10.sh
+configs/scaling_grid/jobs/s101m_lrx0.72_tpp10.sh
+configs/queue_jobs/apply_lr_s101m.sh
 configs/scaling_grid/jobs/s101m.sh
+configs/scaling_grid/jobs/s191m_lrx0.18_tpp5.sh
+configs/scaling_grid/jobs/s191m_lrx0.36_tpp5.sh
+configs/scaling_grid/jobs/s191m_lrx0.72_tpp5.sh
+configs/queue_jobs/apply_lr_s191m.sh
 configs/scaling_grid/jobs/s191m.sh
+configs/scaling_grid/jobs/s304m_lrx0.18_tpp5.sh
+configs/scaling_grid/jobs/s304m_lrx0.36_tpp5.sh
+configs/scaling_grid/jobs/s304m_lrx0.72_tpp5.sh
+configs/queue_jobs/apply_lr_s304m.sh
 configs/scaling_grid/jobs/s304m.sh

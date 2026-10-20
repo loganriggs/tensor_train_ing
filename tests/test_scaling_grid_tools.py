@@ -93,3 +93,21 @@ def test_scaling_grid_detects_reading_past_one_epoch(tmp_path):
                                                   "training_descriptor": {"configuration": {"data": {"manifest": str(manifest)}}}}))
         msg = g.read_past_one_epoch(d)
         assert (msg is None) if expect is None else (expect in msg), msg
+
+
+def test_apply_grid_lr_fits_checks_and_refuses_started_runs(tmp_path):
+    sizes = tmp_path / "sizes.yaml"
+    sizes.write_text("s9m:\n  model: {d_model: 64}\n  lr: 0.004\n  data_manifest: x\n")
+    runs = tmp_path / "runs"
+    for mult, ce in ((0.25, 4.36), (0.5, 4.35), (2.0, 4.45)):
+        d = runs / f"s9m_lrx{mult:g}" / f"s9m_lrx{mult:g}_tpp10" / "evaluation"; d.mkdir(parents=True)
+        (d / "evaluation.json").write_text(json.dumps({"ce": ce, "training_descriptor": {"lr": 0.004 * mult}}))
+    script = [sys.executable, str(ROOT / "scripts/apply_grid_lr.py"), "s9m", "--runs", str(runs), "--sizes", str(sizes)]
+    r = subprocess.run(script, capture_output=True, text=True)
+    assert r.returncode == 0 and "fitted interior optimum" in r.stdout, r.stdout
+    import yaml
+    new = yaml.safe_load(sizes.read_text())["s9m"]["lr"]
+    assert 0.001 < new < 0.004, new
+    (runs / "s9m").mkdir()  # main run started -> must refuse
+    r2 = subprocess.run(script, capture_output=True, text=True)
+    assert r2.returncode == 1 and "REFUSED" in r2.stdout

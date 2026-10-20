@@ -39,3 +39,11 @@ def test_h100_variants_differ_only_in_normalization_and_clip():
     for sec in ("model", "train", "data", "project"):
         diff = {k for k in set(a[sec]) | set(b[sec]) if a[sec].get(k) != b[sec].get(k)}
         assert diff <= {"normalization", "qk_clip_tau", "qk_clip_every_steps"}, (sec, diff)
+
+
+def test_h100_muon_variant_differs_from_b_only_in_optimizer_settings():
+    b, c = (Config.from_yaml(str(ROOT / f"configs/h100/{n}.yaml")).raw for n in ("1b_spectral", "1b_spectral_muon"))
+    allowed = {"model": {"width_scaling_base"}, "train": {"optimizer", "muon_adjust_lr", "aux_adamw_lr", "lr"}, "data": set(), "project": set()}
+    for sec, ok in allowed.items():
+        diff = {k for k in set(b[sec]) | set(c[sec]) if b[sec].get(k) != c[sec].get(k)}
+        assert diff <= ok, (sec, diff - ok)

@@ -49,6 +49,11 @@ single RTX 5000 Ada box, what can only be verified on the rental, and what is st
 
 ## 5. Rough size and cost (estimates; assume 35% MFU on H100 bf16, to be replaced by the day-1 canary)
 
+> **Compile penalty measured (15:55 Oct 20, `runs/compile_penalty_1b_window`, Codex's matched benchmark):** 24×2048 at context 2048, one RTX 5000 Ada,
+> micro-batch 1×2048, 6 steady updates: eager 2,348 vs compiled 2,488 tok/s (**compiled = 1.06×**), losses identical to 1e-4, peak 27.0 vs 28.4 GB.
+> The distributed trainer's lack of compile costs ~6% at this shape, so the estimates below need only a ≈ ×1.06 adjustment. Re-measure at the H100
+> micro-batch (4×2048) in the day-1 canary.
+
 | Config | Params | Chinchilla tokens | 8×H100 est. | Note |
 | --- | ---: | ---: | ---: | --- |
 | pilot_1b | 1.4B | ~28B | **~1 day** | The natural first big run |

@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
+FLAT_CE = 0.015  # ~3x the evaluation noise: a sweep whose CE range is below this has no identifiable optimum (lr_horizon2, 2026-10-20)
 
 
 def collect(runs: Path, pattern: str, also=(), exclude=None) -> dict:
@@ -81,6 +82,9 @@ def main(argv=None):
         pts = ", ".join(f"{lr:g}:{ce:.3f}" for lr, ce in zip(r["lrs"], r["ce"]))
         o = "n/a (<3 LRs)" if r["opt"] is None and len(r["lrs"]) < 3 else (f"{r['opt']:.2e}" if r["opt"] else "no minimum")
         flag = "" if r["interior"] or r["opt"] is None else "  (outside sampled range: extrapolated)"
+        spread = max(r["ce"]) - min(r["ce"]) if r["ce"] else 0.0
+        if len(r["lrs"]) >= 3 and spread < FLAT_CE:
+            flag += f"  (FLAT: CE spread {spread:.3f} < {FLAT_CE} across {r['lrs'][-1] / r['lrs'][0]:.1f}x LR, so the optimum is not identifiable)"
         print(f"group {g}: {pts}  ->  optimum {o}{flag}")
         nxt = suggest_next(r)
         if nxt:
